@@ -3,6 +3,8 @@
 Java Security Scanner v1.0
 Scans Java applications for security vulnerabilities and misconfigurations.
 
+Author: Krishnendu De
+
 Supports:
   - Java source files (.java)
   - Maven build files (pom.xml)

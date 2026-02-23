@@ -14,6 +14,18 @@ Supported inputs:
   PHP
     - Source files (.php, .phtml, .php5, .php7, .php8)
     - Runtime configuration (php.ini)
+Java Security Scanner v1.0
+Scans Java applications for security vulnerabilities and misconfigurations.
+
+Author: Krishnendu De
+
+Supports:
+  - Java source files (.java)
+  - Maven build files (pom.xml)
+  - Gradle build files (build.gradle / build.gradle.kts)
+  - WAR / JAR / EAR archives
+  - Servlet descriptors (web.xml)
+  - Spring Boot configuration (.properties / .yml / .yaml)
 """
 
 import os

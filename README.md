@@ -1,4 +1,4 @@
-# Java Security Scanner
+# Application Security Scanner (ASS)
 
 A static analysis tool that scans Java applications for common security vulnerabilities and misconfigurations.
 

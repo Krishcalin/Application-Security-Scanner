@@ -1,0 +1,78 @@
+# lamp_mysql.cnf
+# Intentionally misconfigured MySQL/MariaDB config for scanner testing.
+# DO NOT use in production — this file exists solely as a scan target.
+
+[mysqld]
+
+# --- LAMP-MYSQL-019: Running as OS root user (privilege escalation) ---
+user = root
+
+# --- LAMP-MYSQL-011: Default port 3306 (easily discoverable) ---
+port = 3306
+
+# --- LAMP-MYSQL-003: bind-address=0.0.0.0 (exposed to all interfaces) ---
+bind-address = 0.0.0.0
+
+datadir = /var/lib/mysql
+socket = /var/lib/mysql/mysql.sock
+
+# --- LAMP-MYSQL-001: skip-grant-tables (authentication disabled!) ---
+skip-grant-tables
+
+# --- LAMP-MYSQL-002: local-infile enabled (file read attack) ---
+local-infile = 1
+
+# --- LAMP-MYSQL-005: secure-file-priv empty (unrestricted file access) ---
+secure-file-priv = ""
+
+# --- LAMP-MYSQL-006: old_passwords=1 (weak password hashing) ---
+old_passwords = 1
+
+# --- LAMP-MYSQL-008: symbolic-links=1 (symlink attack risk) ---
+symbolic-links = 1
+
+# --- LAMP-MYSQL-009: log_bin_trust_function_creators=1 (privilege escalation) ---
+log_bin_trust_function_creators = 1
+
+# --- LAMP-MYSQL-010: require_secure_transport=OFF (unencrypted connections) ---
+require_secure_transport = OFF
+
+# --- LAMP-MYSQL-012: general-log=ON (plaintext query logging) ---
+general-log = ON
+general-log-file = /var/log/mysql/general.log
+
+# --- LAMP-MYSQL-013: sql_mode missing STRICT_TRANS_TABLES ---
+sql_mode = "NO_ENGINE_SUBSTITUTION"
+
+# --- LAMP-MYSQL-014: event_scheduler=ON (scheduled code execution) ---
+event_scheduler = ON
+
+# --- LAMP-MYSQL-015: Binary log without encryption ---
+log-bin = /var/log/mysql/mysql-bin.log
+binlog_format = MIXED
+
+# --- LAMP-MYSQL-016: skip-name-resolve=OFF (DNS cache poisoning risk) ---
+skip-name-resolve = OFF
+
+# --- LAMP-MYSQL-017: innodb_file_per_table=OFF (data isolation risk) ---
+innodb_file_per_table = OFF
+
+# --- LAMP-MYSQL-018: Weak authentication plugin ---
+default-authentication-plugin = mysql_old_password
+
+# Performance settings
+max_connections = 150
+innodb_buffer_pool_size = 128M
+
+# --- LAMP-MYSQL-007: skip-show-database=OFF (database enumeration) ---
+skip-show-database = OFF
+
+[mysql]
+# --- LAMP-MYSQL-002: local-infile in client section too ---
+local-infile = 1
+
+no-auto-rehash
+
+[client]
+port = 3306
+socket = /var/lib/mysql/mysql.sock

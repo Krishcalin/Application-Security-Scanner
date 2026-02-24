@@ -1,9 +1,10 @@
-# Java, PHP, Python & MERN Security Scanner v4.0
+# Java, PHP, Python, MERN & LAMP Security Scanner v5.0
 # Application Security Scanner (ASS)
 
 A static analysis tool that scans Java, PHP, Python (including AI/agentic),
-and MERN stack (MongoDB / Express / React / Node.js) applications for security
-vulnerabilities and misconfigurations.
+MERN stack (MongoDB / Express / React / Node.js), and LAMP stack
+(Linux / Apache / MySQL / PHP) applications for security vulnerabilities
+and misconfigurations.
 
 ## What It Scans
 
@@ -24,6 +25,9 @@ vulnerabilities and misconfigurations.
 | `.js` / `.jsx` / `.ts` / `.tsx` / `.mjs` / `.cjs` | MERN / Node.js | SAST rules — 25+ vulnerability patterns |
 | `package.json` | MERN / Node.js | npm dependency CVE lookup (20 packages) |
 | `.env` / `.env.*` | MERN / Node.js | Environment misconfiguration checks |
+| `httpd.conf` / `apache2.conf` / `.conf` / `.htaccess` | LAMP / Apache | 30+ Apache misconfiguration rules + 14 Apache CVEs |
+| `my.cnf` / `my.ini` / `mysqld.cnf` | LAMP / MySQL | 20 MySQL/MariaDB misconfiguration rules + 10 MySQL CVEs |
+| `.php` / `.phtml` / `.php5–8` (LAMP context) | LAMP / PHP | 15 additional LAMP-specific PHP SAST rules |
 
 ---
 
@@ -211,6 +215,121 @@ vulnerabilities and misconfigurations.
 | `session.cookie_secure` not set | Cookie transmitted over HTTP | HIGH |
 | `disable_functions` empty | Dangerous functions accessible | LOW |
 
+### LAMP Stack — Apache HTTP Server Misconfiguration Checks
+
+| Rule ID | Directive / Pattern | Risk | Severity |
+|---|---|---|---|
+| LAMP-APACHE-001 | `ServerTokens Full/OS/Major` | Server version disclosed in HTTP headers | MEDIUM |
+| LAMP-APACHE-002 | `ServerSignature On` | Version appended to Apache error pages | MEDIUM |
+| LAMP-APACHE-003 | `TraceEnable On` | HTTP TRACE → Cross-Site Tracing (XST) | MEDIUM |
+| LAMP-APACHE-004 | `Options Indexes` | Directory listing enabled | HIGH |
+| LAMP-APACHE-005 | `Options FollowSymLinks` | Symlink traversal — any file readable | HIGH |
+| LAMP-APACHE-006 | `AllowOverride All` | Unrestricted .htaccess override | MEDIUM |
+| LAMP-APACHE-007 | `ProxyRequests On` | Open HTTP forward proxy (SSRF/amplification) | CRITICAL |
+| LAMP-APACHE-008 | `SSLProtocol all` | TLS 1.0/1.1 + SSLv3 enabled (POODLE/BEAST) | HIGH |
+| LAMP-APACHE-009 | `SSLv2`/`SSLv3` in SSLProtocol | Cryptographically broken SSL versions | CRITICAL |
+| LAMP-APACHE-010 | RC4/DES/NULL in SSLCipherSuite | Weak/broken cipher suites (SWEET32/FREAK) | HIGH |
+| LAMP-APACHE-011 | `SSLVerifyClient none` | Client cert verification disabled | MEDIUM |
+| LAMP-APACHE-012 | `server-status` unprotected | Real-time request data exposed | MEDIUM |
+| LAMP-APACHE-013 | `server-info` unprotected | Full server config exposed | HIGH |
+| LAMP-APACHE-014 | `LimitRequestBody 0` | No request size limit → DoS | MEDIUM |
+| LAMP-APACHE-015 | `Allow from all` | Deprecated access control (Apache 2.2) | HIGH |
+| LAMP-APACHE-016 | `php_value register_globals on` | PHP register_globals — variable injection | CRITICAL |
+| LAMP-APACHE-017 | `X-Frame-Options: ALLOW*` | Clickjacking protection disabled | MEDIUM |
+| LAMP-APACHE-018 | HSTS `max-age` < 31536000 | Insufficient HSTS — SSL stripping risk | MEDIUM |
+| LAMP-APACHE-019 | CSP with `unsafe-inline`/`unsafe-eval` | CSP XSS mitigation defeated | MEDIUM |
+| LAMP-APACHE-020 | `RewriteRule` with `[P]` proxy flag | SSRF via user-controlled proxy target | HIGH |
+| LAMP-APACHE-021 | `FileETag All`/`INode` | Inode info exposed via ETag | LOW |
+| LAMP-APACHE-022 | `Timeout 300+` | Slowloris DoS amplification | LOW |
+| LAMP-APACHE-023 | `CustomLog /dev/null` | Access logging disabled — no audit trail | MEDIUM |
+| LAMP-APACHE-024 | `Options MultiViews` | File extension probing / enumeration | LOW |
+| LAMP-APACHE-025 | `Allow/Deny from` directives | Deprecated Apache 2.2 access control | MEDIUM |
+| LAMP-APACHE-026 | `SSLCompression on` | CRIME attack (CVE-2012-4929) | HIGH |
+| LAMP-APACHE-027 | `SSLSessionCacheTimeout 5000+` | Extended session replay window | LOW |
+| LAMP-APACHE-028 | `Protocols h2c` | HTTP/2 over cleartext — no encryption | MEDIUM |
+| LAMP-APACHE-029 | `php_flag engine on` (upload dir) | PHP execution in upload directory → RCE | HIGH |
+| LAMP-APACHE-030 | `Options ExecCGI` | CGI execution in directory | HIGH |
+| LAMP-APACHE-F01–F09 | (file-level absence checks) | Missing ServerTokens Prod, ServerSignature Off, TraceEnable Off, security headers (X-Content-Type-Options, X-Frame-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy) | LOW–MEDIUM |
+
+### LAMP Stack — MySQL / MariaDB Misconfiguration Checks
+
+| Rule ID | Option | Risk | Severity |
+|---|---|---|---|
+| LAMP-MYSQL-001 | `skip-grant-tables` | Authentication completely disabled | CRITICAL |
+| LAMP-MYSQL-002 | `local-infile=1` | LOAD DATA LOCAL — arbitrary client file read | HIGH |
+| LAMP-MYSQL-003 | `bind-address=0.0.0.0` | MySQL exposed on all network interfaces | CRITICAL |
+| LAMP-MYSQL-004 | `bind-address=::` | MySQL exposed on all IPv6 interfaces | HIGH |
+| LAMP-MYSQL-005 | `secure-file-priv=""` | Unrestricted MySQL file read/write | HIGH |
+| LAMP-MYSQL-006 | `old_passwords=1` | Weak 16-byte password hash (cracked in seconds) | HIGH |
+| LAMP-MYSQL-007 | `skip-show-database=OFF` | Any user can enumerate all database names | MEDIUM |
+| LAMP-MYSQL-008 | `symbolic-links=1` | MyISAM symlink attack → arbitrary file access | HIGH |
+| LAMP-MYSQL-009 | `log_bin_trust_function_creators=1` | Stored function privilege escalation | HIGH |
+| LAMP-MYSQL-010 | `require_secure_transport=OFF` | Unencrypted MySQL connections allowed | HIGH |
+| LAMP-MYSQL-011 | `port=3306` | Default port — easily discovered by scanners | LOW |
+| LAMP-MYSQL-012 | `general-log=ON` | All queries (incl. passwords) logged in plaintext | MEDIUM |
+| LAMP-MYSQL-013 | `sql_mode` missing STRICT | Silent data truncation / integrity issues | MEDIUM |
+| LAMP-MYSQL-014 | `event_scheduler=ON` | Scheduled SQL code execution enabled | MEDIUM |
+| LAMP-MYSQL-015 | `log-bin` without encryption | Binary logs contain sensitive data unencrypted | MEDIUM |
+| LAMP-MYSQL-016 | `skip-name-resolve=OFF` | DNS cache poisoning → access control bypass | LOW |
+| LAMP-MYSQL-017 | `innodb_file_per_table=OFF` | Poor data isolation, disk reclaim impossible | LOW |
+| LAMP-MYSQL-018 | `default-authentication-plugin=mysql_old_password` | Weak authentication hash algorithm | HIGH |
+| LAMP-MYSQL-019 | `user=root` | MySQL running as OS root — full system access | CRITICAL |
+| LAMP-MYSQL-020 | `max_allowed_packet` > 500MB | Memory exhaustion DoS | LOW |
+
+### LAMP Stack — Additional PHP SAST Rules
+
+| Rule ID | Pattern | Risk | Severity |
+|---|---|---|---|
+| LAMP-PHP-001 | `mysqli_query()` with interpolated variable | SQL injection | CRITICAL |
+| LAMP-PHP-002 | `mysql_query()`, `mysql_connect()` | Deprecated extension — no prepared statements | HIGH |
+| LAMP-PHP-003 | `extract($_POST/GET)` | Variable injection — overwrites any local var | CRITICAL |
+| LAMP-PHP-004 | `parse_str($str)` (no output arg) | Variable injection to global scope | HIGH |
+| LAMP-PHP-005 | `mail($_POST['email'], ...)` | Email header injection → spam relay | HIGH |
+| LAMP-PHP-006 | `session_id($_GET['sessid'])` | Session fixation attack | HIGH |
+| LAMP-PHP-007 | `move_uploaded_file($_FILES, ...)` | Arbitrary file upload → RCE | HIGH |
+| LAMP-PHP-008 | `mt_rand()` for tokens | Predictable PRNG for security tokens | MEDIUM |
+| LAMP-PHP-009 | `unserialize($_COOKIE/GET/POST)` | PHP object injection → RCE via POP chains | CRITICAL |
+| LAMP-PHP-010 | `ldap_search($ldap, ..., $_POST)` | LDAP injection → auth bypass | HIGH |
+| LAMP-PHP-011 | `DOMXPath->query($_REQUEST)` | XPath injection → data extraction | HIGH |
+| LAMP-PHP-012 | `preg_replace("/.../e", ...)` | Arbitrary PHP code execution via /e modifier | CRITICAL |
+| LAMP-PHP-013 | `fopen/file_get_contents($_GET['path'])` | Path traversal + null byte injection | HIGH |
+| LAMP-PHP-014 | `if ($token == 0)` loose comparison | Type juggling → auth bypass | MEDIUM |
+| LAMP-PHP-015 | `phpinfo()` | Server info disclosure in production | MEDIUM |
+
+### LAMP Stack — Apache httpd CVEs
+
+| CVE | Affected Versions | Severity | Description |
+|---|---|---|---|
+| CVE-2021-41773 | 2.4.49 | CRITICAL | Path traversal + RCE (exploited in the wild) |
+| CVE-2021-42013 | 2.4.50 | CRITICAL | Path traversal bypass (incomplete fix for CVE-2021-41773) |
+| CVE-2023-25690 | < 2.4.56 | CRITICAL | HTTP request smuggling via RewriteRule (CVSSv3: 9.8) |
+| CVE-2023-27522 | < 2.4.57 | HIGH | HTTP response splitting in mod_proxy_uwsgi |
+| CVE-2023-31122 | < 2.4.57 | MEDIUM | OOB read in mod_macro |
+| CVE-2023-45802 | < 2.4.58 | HIGH | HTTP/2 stream reset memory leak DoS |
+| CVE-2023-43622 | < 2.4.58 | HIGH | Incomplete TLS handshake exhausts worker threads (DoS) |
+| CVE-2024-24795 | < 2.4.59 | MEDIUM | HTTP response splitting in multiple modules |
+| CVE-2024-27316 | < 2.4.59 | HIGH | HTTP/2 CONTINUATION frame flood DoS |
+| CVE-2024-38474 | < 2.4.60 | CRITICAL | mod_rewrite encoding bypass → source disclosure / RCE |
+| CVE-2024-38477 | < 2.4.60 | HIGH | NULL pointer dereference in mod_proxy (DoS) |
+| CVE-2024-39573 | < 2.4.60 | HIGH | mod_rewrite [P] flag SSRF |
+| CVE-2024-40898 | < 2.4.62 | HIGH | UNC path SSRF in mod_rewrite (Windows) |
+| CVE-2024-39884 | < 2.4.62 | HIGH | Source code disclosure via mod_rewrite regression |
+
+### LAMP Stack — MySQL / MariaDB CVEs
+
+| CVE | Affected Versions | Severity | Description |
+|---|---|---|---|
+| CVE-2021-35604 | MySQL ≤ 8.0.26 | HIGH | InnoDB — authenticated DoS / crash |
+| CVE-2022-21589 | MySQL < 5.7.38 | MEDIUM | Server Privileges DoS |
+| CVE-2022-21592 | MySQL < 8.0.30 | MEDIUM | C API code execution |
+| CVE-2022-38791 | MariaDB < 10.9.3 | HIGH | Prepared statement crash (DoS) |
+| CVE-2022-47015 | MariaDB < 10.9.3 | HIGH | Spider engine NULL pointer dereference (DoS) |
+| CVE-2023-5157 | MariaDB < 10.11.6 | HIGH | JSON function DoS crash |
+| CVE-2023-22084 | MySQL < 8.0.35 | MEDIUM | InnoDB data read bypass |
+| CVE-2024-20961 | MySQL < 8.0.37 | HIGH | EXPLAIN statement DoS |
+| CVE-2024-20973 | MySQL < 8.0.37 | MEDIUM | InnoDB DoS |
+| CVE-2024-21096 | MySQL < 8.3.0 | MEDIUM | mysqldump information disclosure |
+
 ---
 
 ## Usage
@@ -255,6 +374,20 @@ python3 java_scanner.py package.json --verbose
 
 # Scan .env file for secrets and misconfigurations
 python3 java_scanner.py .env --severity HIGH
+
+# Scan a LAMP application directory (Apache configs, MySQL configs, PHP sources)
+python3 java_scanner.py /var/www/lamp-app --json report.json
+
+# Scan an Apache configuration file
+python3 java_scanner.py httpd.conf --verbose
+python3 java_scanner.py /etc/apache2/apache2.conf --severity HIGH
+
+# Scan a MySQL configuration file
+python3 java_scanner.py my.cnf --severity CRITICAL
+python3 java_scanner.py /etc/mysql/mysqld.cnf --json mysql-report.json
+
+# Scan all Apache VirtualHost configs
+python3 java_scanner.py /etc/apache2/sites-available/ --severity HIGH
 
 # Only show CRITICAL findings across a full project
 python3 java_scanner.py /src --severity CRITICAL
@@ -305,10 +438,10 @@ Expected output (abridged):
 ...
 
 SUMMARY
-CRITICAL  59
-HIGH      105
-MEDIUM    44
-LOW        4
+CRITICAL  86
+HIGH      165
+MEDIUM    84
+LOW       10
 ```
 
 ---
@@ -337,6 +470,9 @@ every scanner rule:
 | `vulnerable_mern.js` | MERN / Node.js | NoSQL injection, CMDI, JWT bypass, prototype pollution, SSRF, XSS, DESER, path traversal |
 | `package.json` | MERN / Node.js | 20 known-vulnerable npm packages (20+ CVEs) |
 | `.env` | MERN / Node.js | Weak secrets, DEBUG wildcard, CORS wildcard, embedded DB credentials |
+| `lamp_apache.conf` | LAMP / Apache | 30 Apache httpd misconfiguration rules + CVE-2021-41773 version check |
+| `lamp_mysql.cnf` | LAMP / MySQL | 20 MySQL/MariaDB misconfiguration rules covering all LAMP-MYSQL rules |
+| `vulnerable_lamp.php` | LAMP / PHP | All 15 LAMP-specific PHP rules: extract injection, session fixation, LDAP/XPath injection, type juggling, file upload, object injection |
 
 ---
 

@@ -1,4 +1,3 @@
-# Java, PHP & Python Security Scanner v3.0
 # Application Security Scanner (ASS)
 
 A static analysis tool that scans Java, PHP, and Python (including AI/agentic)

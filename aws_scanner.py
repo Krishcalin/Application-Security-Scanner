@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AWS IaC Security Scanner v1.0.0
+AWS IaC Security Scanner v1.1.0
 Static analysis of AWS Infrastructure-as-Code files for security
 misconfigurations mapped to CIS AWS Benchmark and AWS Well-Architected
 Framework Security Pillar.
@@ -23,11 +23,25 @@ from datetime import datetime
 
 try:
     import yaml
+
+    # CloudFormation templates use custom YAML tags (!Ref, !Sub, !GetAtt, etc.)
+    # Register passthrough constructors so safe_load does not raise on them.
+    def _cf_tag_constructor(loader, tag_suffix, node):
+        """Return a plain Python value for any CloudFormation intrinsic tag."""
+        if isinstance(node, yaml.ScalarNode):
+            return loader.construct_scalar(node)
+        if isinstance(node, yaml.SequenceNode):
+            return loader.construct_sequence(node, deep=True)
+        return loader.construct_mapping(node, deep=True)
+
+    _CF_LOADER = yaml.SafeLoader
+    _CF_LOADER.add_multi_constructor("!", _cf_tag_constructor)
+
     HAS_YAML = True
 except ImportError:
     HAS_YAML = False
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # ============================================================
 # TERRAFORM SAST RULES  (regex applied to .tf file content)
@@ -485,6 +499,196 @@ TF_SAST_RULES = [
         "cwe": "CWE-798",
         "recommendation": "Use AWS Secrets Manager or SSM Parameter Store with data sources to inject secrets at runtime.",
     },
+
+    # ── CloudWatch / Logs ────────────────────────────────────
+    {
+        "id": "AWS-CW-TF-001",
+        "category": "CloudWatch: Log Retention",
+        "name": "CloudWatch log group has no retention policy",
+        "severity": "MEDIUM",
+        "pattern": r'resource\s+"aws_cloudwatch_log_group"[^}]*\}(?![^\{]*retention_in_days)',
+        "description": "Log groups without a retention policy retain logs indefinitely, leading to unbounded storage costs and stale data.",
+        "cwe": "CWE-532",
+        "recommendation": "Set retention_in_days to a value matching your compliance requirements (e.g., 90 or 365).",
+    },
+    {
+        "id": "AWS-CW-TF-002",
+        "category": "CloudWatch: Encryption",
+        "name": "CloudWatch log group not encrypted with KMS CMK",
+        "severity": "MEDIUM",
+        "pattern": r'resource\s+"aws_cloudwatch_log_group"[^}]*\}(?![^\{]*kms_key_id)',
+        "description": "Without a customer-managed KMS key, CloudWatch log data is encrypted with the AWS-managed key, limiting access control.",
+        "cwe": "CWE-311",
+        "recommendation": "Specify kms_key_id pointing to a CMK with appropriate key policy for CloudWatch Logs.",
+    },
+    {
+        "id": "AWS-CW-TF-003",
+        "category": "CloudWatch: Alarm Actions",
+        "name": "CloudWatch alarm has no actions configured",
+        "severity": "LOW",
+        "pattern": r'resource\s+"aws_cloudwatch_metric_alarm"[^}]*\}(?![^\{]*alarm_actions)',
+        "description": "A CloudWatch alarm with no actions does not notify on-call teams or trigger remediation when thresholds are breached.",
+        "cwe": "CWE-778",
+        "recommendation": "Add alarm_actions pointing to an SNS topic that notifies your operations team.",
+    },
+
+    # ── VPC ──────────────────────────────────────────────────
+    {
+        "id": "AWS-VPC-TF-001",
+        "category": "VPC: Flow Logs",
+        "name": "VPC has no flow logs enabled",
+        "severity": "HIGH",
+        "pattern": r'resource\s+"aws_vpc"[^}]*\}(?![^\{]*aws_flow_log)',
+        "description": "Without VPC flow logs, network traffic to and from the VPC is not captured, hindering threat detection and forensics.",
+        "cwe": "CWE-778",
+        "recommendation": "Create an aws_flow_log resource targeting this VPC with traffic_type = 'ALL'.",
+    },
+    {
+        "id": "AWS-VPC-TF-002",
+        "category": "VPC: Public Subnet",
+        "name": "Subnet configured to assign public IP addresses automatically",
+        "severity": "MEDIUM",
+        "pattern": r'map_public_ip_on_launch\s*=\s*true',
+        "description": "Subnets that auto-assign public IPs expose every launched instance to the internet by default.",
+        "cwe": "CWE-284",
+        "recommendation": "Set map_public_ip_on_launch = false. Explicitly assign Elastic IPs only where required.",
+    },
+
+    # ── WAF ──────────────────────────────────────────────────
+    {
+        "id": "AWS-WAF-TF-001",
+        "category": "WAF: Default Action",
+        "name": "WAFv2 WebACL default action is ALLOW",
+        "severity": "HIGH",
+        "pattern": r'default_action\s*\{\s*allow\s*\{\s*\}',
+        "description": "A WAF with a default ALLOW action passes all unmatched requests, reducing protection against web attacks.",
+        "cwe": "CWE-284",
+        "recommendation": "Set the default_action to block{}. Explicitly allow known-good traffic with rule-based allow statements.",
+    },
+
+    # ── GuardDuty ────────────────────────────────────────────
+    {
+        "id": "AWS-GD-TF-001",
+        "category": "GuardDuty: Threat Detection",
+        "name": "GuardDuty detector disabled",
+        "severity": "HIGH",
+        "pattern": r'resource\s+"aws_guardduty_detector"[^}]*enable\s*=\s*false',
+        "description": "A disabled GuardDuty detector stops all threat intelligence and anomaly detection for the account/region.",
+        "cwe": "CWE-778",
+        "recommendation": "Set enable = true and enable optional features (S3 protection, EKS runtime monitoring).",
+    },
+
+    # ── AWS Config ───────────────────────────────────────────
+    {
+        "id": "AWS-CFG-TF-001",
+        "category": "Config: Coverage",
+        "name": "AWS Config recorder does not record all resource types",
+        "severity": "MEDIUM",
+        "pattern": r'all_supported\s*=\s*false',
+        "description": "Limiting Config to specific resource types creates blind spots in compliance monitoring and change tracking.",
+        "cwe": "CWE-778",
+        "recommendation": "Set all_supported = true and include_global_resource_types = true inside the recording_group block.",
+    },
+    {
+        "id": "AWS-CFG-TF-002",
+        "category": "Config: Coverage",
+        "name": "AWS Config recorder excludes global resource types (IAM)",
+        "severity": "MEDIUM",
+        "pattern": r'include_global_resource_types\s*=\s*false',
+        "description": "Excluding global resources (e.g., IAM) from Config leaves critical identity changes untracked.",
+        "cwe": "CWE-778",
+        "recommendation": "Set include_global_resource_types = true inside the recording_group block.",
+    },
+
+    # ── Elastic Beanstalk ────────────────────────────────────
+    {
+        "id": "AWS-EB-TF-001",
+        "category": "Elastic Beanstalk: HTTPS",
+        "name": "Elastic Beanstalk load balancer listener uses HTTP",
+        "severity": "HIGH",
+        "pattern": r'"aws:elb:listener"[^}]*"ListenerProtocol"\s*,\s*"HTTP"',
+        "description": "An HTTP listener on the Elastic Beanstalk load balancer transmits user data in plaintext.",
+        "cwe": "CWE-319",
+        "recommendation": "Configure an HTTPS listener with an ACM certificate. Redirect port 80 to 443.",
+    },
+    {
+        "id": "AWS-EB-TF-002",
+        "category": "Elastic Beanstalk: Updates",
+        "name": "Elastic Beanstalk managed platform updates disabled",
+        "severity": "MEDIUM",
+        "pattern": r'"ManagedActionsEnabled"\s*,\s*"false"',
+        "description": "Disabling managed platform updates leaves the Elastic Beanstalk environment running outdated, potentially vulnerable platform versions.",
+        "cwe": "CWE-1104",
+        "recommendation": "Enable managed platform updates with a maintenance window to keep the platform patched.",
+    },
+
+    # ── SageMaker ────────────────────────────────────────────
+    {
+        "id": "AWS-SM-TF-001",
+        "category": "SageMaker: Network",
+        "name": "SageMaker notebook instance allows direct internet access",
+        "severity": "HIGH",
+        "pattern": r'direct_internet_access\s*=\s*"Enabled"',
+        "description": "Enabling direct internet access for a SageMaker notebook allows data exfiltration and bypasses VPC security controls.",
+        "cwe": "CWE-284",
+        "recommendation": "Set direct_internet_access = 'Disabled' and route traffic through a VPC with a NAT gateway.",
+    },
+    {
+        "id": "AWS-SM-TF-002",
+        "category": "SageMaker: Encryption",
+        "name": "SageMaker notebook instance storage not encrypted with CMK",
+        "severity": "MEDIUM",
+        "pattern": r'resource\s+"aws_sagemaker_notebook_instance"[^}]*\}(?![^\{]*kms_key_id)',
+        "description": "Without a customer-managed KMS key, SageMaker notebook EBS storage uses the AWS-managed key.",
+        "cwe": "CWE-311",
+        "recommendation": "Specify kms_key_id with a CMK. Apply a key policy restricting access to the notebook role.",
+    },
+
+    # ── EBS Volume ───────────────────────────────────────────
+    {
+        "id": "AWS-EBS-TF-001",
+        "category": "EBS: Encryption",
+        "name": "EBS volume not encrypted",
+        "severity": "HIGH",
+        "pattern": r'resource\s+"aws_ebs_volume"[^}]*encrypted\s*=\s*false',
+        "description": "Unencrypted EBS volumes expose data at rest if the underlying physical storage is compromised.",
+        "cwe": "CWE-311",
+        "recommendation": "Set encrypted = true and specify a kms_key_id. Enable account-level EBS encryption by default.",
+    },
+
+    # ── Step Functions ───────────────────────────────────────
+    {
+        "id": "AWS-SFN-TF-001",
+        "category": "Step Functions: Logging",
+        "name": "Step Functions state machine logging is OFF",
+        "severity": "MEDIUM",
+        "pattern": r'level\s*=\s*"OFF"',
+        "description": "With logging disabled on a state machine, execution history and errors are not captured, hampering debugging and auditing.",
+        "cwe": "CWE-778",
+        "recommendation": "Set level = 'ALL' or 'ERROR' inside the logging_configuration block and specify a CloudWatch log group.",
+    },
+    {
+        "id": "AWS-SFN-TF-002",
+        "category": "Step Functions: Tracing",
+        "name": "Step Functions X-Ray tracing disabled",
+        "severity": "LOW",
+        "pattern": r'tracing_configuration\s*\{[^}]*enabled\s*=\s*false',
+        "description": "Without X-Ray tracing, distributed execution traces across Lambda and other services are unavailable.",
+        "cwe": "CWE-778",
+        "recommendation": "Set enabled = true inside the tracing_configuration block.",
+    },
+
+    # ── Bedrock ──────────────────────────────────────────────
+    {
+        "id": "AWS-BR-TF-001",
+        "category": "Bedrock: Guardrails",
+        "name": "Bedrock agent has no guardrail configured",
+        "severity": "HIGH",
+        "pattern": r'resource\s+"aws_bedrockagent_agent"[^}]*\}(?![^\{]*guardrail)',
+        "description": "A Bedrock agent without guardrails can produce harmful, biased, or policy-violating content.",
+        "cwe": "CWE-284",
+        "recommendation": "Attach a guardrail with content filters, topic policies, and sensitive information redaction.",
+    },
 ]
 
 
@@ -559,6 +763,21 @@ class AWSIaCScanner:
         "AWS::Redshift::Cluster":                   "_cf_redshift",
         "AWS::ECR::Repository":                     "_cf_ecr",
         "AWS::SecretsManager::Secret":              "_cf_secrets_manager",
+        # ── High-priority gap services (v1.1.0) ──────────────
+        "AWS::CloudWatch::Alarm":                   "_cf_cloudwatch_alarm",
+        "AWS::Logs::LogGroup":                      "_cf_log_group",
+        "AWS::EC2::VPC":                            "_cf_vpc",
+        "AWS::EC2::Subnet":                         "_cf_subnet",
+        "AWS::EC2::FlowLog":                        "_cf_flow_log",
+        "AWS::WAFv2::WebACL":                       "_cf_waf",
+        "AWS::GuardDuty::Detector":                 "_cf_guardduty",
+        "AWS::Config::ConfigurationRecorder":       "_cf_config_recorder",
+        "AWS::ElasticBeanstalk::Environment":       "_cf_elasticbeanstalk",
+        "AWS::SageMaker::NotebookInstance":         "_cf_sagemaker_notebook",
+        "AWS::SageMaker::Domain":                   "_cf_sagemaker_domain",
+        "AWS::Bedrock::Agent":                      "_cf_bedrock_agent",
+        "AWS::EC2::Volume":                         "_cf_ebs_volume",
+        "AWS::StepFunctions::StateMachine":         "_cf_stepfunctions",
     }
 
     def __init__(self, verbose=False):
@@ -648,7 +867,7 @@ class AWSIaCScanner:
                 self._warn(f"pyyaml not installed — skipping {filepath}. Install with: pip install pyyaml")
                 return
             try:
-                data = yaml.safe_load(text)
+                data = yaml.load(text, Loader=_CF_LOADER)  # noqa: S506 — custom safe loader with CF tag support
             except Exception as e:
                 self._warn(f"YAML parse error in {filepath}: {e}")
                 return
@@ -1160,7 +1379,7 @@ class AWSIaCScanner:
                 severity="HIGH",
                 file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
                 description="An HTTP listener transmits data and session tokens without encryption.",
-                recommendation="Change Protocol to HTTPS and add a certificate ARN. Add an HTTP→HTTPS redirect action.",
+                recommendation="Change Protocol to HTTPS and add a certificate ARN. Add an HTTP->HTTPS redirect action.",
                 cwe="CWE-319",
             ))
         ssl_policy = props.get("SslPolicy", "")
@@ -1543,6 +1762,427 @@ class AWSIaCScanner:
                 description="Without a CMK, the secret is encrypted with the AWS-managed default key, limiting key access control.",
                 recommendation="Specify a KmsKeyId pointing to a customer-managed KMS key.",
                 cwe="CWE-311",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — CloudWatch Alarm (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_cloudwatch_alarm(self, rid, props, fp):
+        if not props.get("AlarmActions") and not props.get("OKActions") and not props.get("InsufficientDataActions"):
+            self._add(Finding(
+                rule_id="AWS-CW-001",
+                name=f"CloudWatch alarm '{rid}' has no actions configured",
+                category="CloudWatch: Alarm Actions",
+                severity="LOW",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="An alarm with no actions does not notify teams or trigger remediation when thresholds are breached.",
+                recommendation="Add AlarmActions pointing to an SNS topic. Configure OKActions to signal recovery.",
+                cwe="CWE-778",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — CloudWatch Log Group (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_log_group(self, rid, props, fp):
+        if not props.get("RetentionInDays"):
+            self._add(Finding(
+                rule_id="AWS-CW-002",
+                name=f"CloudWatch log group '{rid}' has no retention policy",
+                category="CloudWatch: Log Retention",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Log groups with no retention policy store logs indefinitely, increasing storage costs and retaining sensitive data longer than required.",
+                recommendation="Set RetentionInDays (e.g., 90, 180, or 365) to match your compliance policy.",
+                cwe="CWE-532",
+            ))
+        if not props.get("KmsKeyId"):
+            self._add(Finding(
+                rule_id="AWS-CW-003",
+                name=f"CloudWatch log group '{rid}' not encrypted with CMK",
+                category="CloudWatch: Encryption",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Without a customer-managed KMS key, log data is protected only by the AWS-managed key, limiting access control.",
+                recommendation="Specify KmsKeyId with a CMK that grants kms:Encrypt/Decrypt to the CloudWatch Logs service principal.",
+                cwe="CWE-311",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — VPC (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_vpc(self, rid, props, fp):
+        # Flow logs check is done indirectly via CF_DISPATCH on FlowLog resources;
+        # flag if EnableDnsSupport or EnableDnsHostnames are explicitly disabled
+        if props.get("EnableDnsHostnames") is False:
+            self._add(Finding(
+                rule_id="AWS-VPC-001",
+                name=f"VPC '{rid}' has DNS hostnames disabled",
+                category="VPC: DNS Configuration",
+                severity="LOW",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Disabling DNS hostnames prevents EC2 instances from receiving public DNS names, complicating connectivity and monitoring.",
+                recommendation="Set EnableDnsHostnames: true unless you have a specific reason to disable it.",
+                cwe="CWE-1188",
+            ))
+        if props.get("EnableDnsSupport") is False:
+            self._add(Finding(
+                rule_id="AWS-VPC-002",
+                name=f"VPC '{rid}' has DNS support disabled",
+                category="VPC: DNS Configuration",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Disabling DNS support in a VPC breaks name resolution for AWS service endpoints and private hosted zones.",
+                recommendation="Set EnableDnsSupport: true.",
+                cwe="CWE-1188",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — Subnet (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_subnet(self, rid, props, fp):
+        if props.get("MapPublicIpOnLaunch") is True:
+            self._add(Finding(
+                rule_id="AWS-VPC-003",
+                name=f"Subnet '{rid}' auto-assigns public IPs on launch",
+                category="VPC: Public Subnet",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Subnets with MapPublicIpOnLaunch=true expose every launched instance to the internet by default, increasing attack surface.",
+                recommendation="Set MapPublicIpOnLaunch: false. Assign Elastic IPs explicitly only to instances that require public access.",
+                cwe="CWE-284",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — VPC Flow Log (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_flow_log(self, rid, props, fp):
+        traffic_type = props.get("TrafficType", "").upper()
+        if traffic_type not in ("ALL", "REJECT"):
+            self._add(Finding(
+                rule_id="AWS-VPC-004",
+                name=f"VPC Flow Log '{rid}' does not capture REJECT or ALL traffic",
+                category="VPC: Flow Logs",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Capturing only ACCEPT traffic misses blocked connection attempts, which are often indicators of reconnaissance or attacks.",
+                recommendation="Set TrafficType: ALL to capture both accepted and rejected flows.",
+                cwe="CWE-778",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — WAFv2 WebACL (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_waf(self, rid, props, fp):
+        default_action = props.get("DefaultAction", {})
+        if "Allow" in default_action and "Block" not in default_action:
+            self._add(Finding(
+                rule_id="AWS-WAF-001",
+                name=f"WAFv2 WebACL '{rid}' default action is ALLOW",
+                category="WAF: Default Action",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="A WAF with a default ALLOW action passes all unmatched requests, providing minimal protection.",
+                recommendation="Change DefaultAction to Block. Use explicit Allow rules for known-good traffic.",
+                cwe="CWE-284",
+            ))
+        rules = props.get("Rules", [])
+        if not rules:
+            self._add(Finding(
+                rule_id="AWS-WAF-002",
+                name=f"WAFv2 WebACL '{rid}' has no rules configured",
+                category="WAF: Rules",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="A WAF WebACL with no rules provides no protection against web attacks.",
+                recommendation="Add AWS Managed Rule Groups (e.g., AWSManagedRulesCommonRuleSet, AWSManagedRulesKnownBadInputsRuleSet).",
+                cwe="CWE-284",
+            ))
+        visibility = props.get("VisibilityConfig", {})
+        if not visibility.get("CloudWatchMetricsEnabled", True):
+            self._add(Finding(
+                rule_id="AWS-WAF-003",
+                name=f"WAFv2 WebACL '{rid}' CloudWatch metrics disabled",
+                category="WAF: Logging",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Disabling CloudWatch metrics removes visibility into WAF rule matches and blocked requests.",
+                recommendation="Set CloudWatchMetricsEnabled: true in VisibilityConfig and enable sampled requests.",
+                cwe="CWE-778",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — GuardDuty Detector (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_guardduty(self, rid, props, fp):
+        if props.get("Enable") is False:
+            self._add(Finding(
+                rule_id="AWS-GD-001",
+                name=f"GuardDuty detector '{rid}' is disabled",
+                category="GuardDuty: Threat Detection",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="A disabled GuardDuty detector stops all threat intelligence and anomaly detection for the account and region.",
+                recommendation="Set Enable: true. Enable optional data sources: S3 protection, EKS audit log monitoring, RDS login activity.",
+                cwe="CWE-778",
+            ))
+        features = props.get("Features", [])
+        s3_enabled = any(
+            f.get("Name") == "S3_DATA_EVENTS" and f.get("Status") == "ENABLED"
+            for f in features
+        )
+        if not s3_enabled and props.get("Enable") is not False:
+            self._add(Finding(
+                rule_id="AWS-GD-002",
+                name=f"GuardDuty detector '{rid}' S3 protection not enabled",
+                category="GuardDuty: Threat Detection",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Without S3 protection, GuardDuty does not monitor for suspicious S3 API calls such as unusual data access or exfiltration.",
+                recommendation="Enable the S3_DATA_EVENTS feature in the Features list.",
+                cwe="CWE-778",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — AWS Config Recorder (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_config_recorder(self, rid, props, fp):
+        recording_group = props.get("RecordingGroup", {})
+        if not recording_group.get("AllSupported", False):
+            self._add(Finding(
+                rule_id="AWS-CFG-001",
+                name=f"Config recorder '{rid}' does not record all resource types",
+                category="Config: Coverage",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Limiting Config to specific resource types creates blind spots in compliance monitoring and change tracking.",
+                recommendation="Set AllSupported: true and IncludeGlobalResourceTypes: true in RecordingGroup.",
+                cwe="CWE-778",
+            ))
+        if not recording_group.get("IncludeGlobalResourceTypes", False):
+            self._add(Finding(
+                rule_id="AWS-CFG-002",
+                name=f"Config recorder '{rid}' excludes global resource types (IAM)",
+                category="Config: Coverage",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Excluding global resources (e.g., IAM users, roles, policies) from Config leaves critical identity changes untracked.",
+                recommendation="Set IncludeGlobalResourceTypes: true in RecordingGroup.",
+                cwe="CWE-778",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — Elastic Beanstalk Environment (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_elasticbeanstalk(self, rid, props, fp):
+        option_settings = props.get("OptionSettings", [])
+        settings_map = {
+            (s.get("Namespace", ""), s.get("OptionName", "")): s.get("Value", "")
+            for s in option_settings
+        }
+        # Check for HTTPS listener
+        listener_protocol = settings_map.get(("aws:elb:listener", "ListenerProtocol"), "")
+        if listener_protocol.upper() == "HTTP":
+            self._add(Finding(
+                rule_id="AWS-EB-001",
+                name=f"Elastic Beanstalk environment '{rid}' uses HTTP listener",
+                category="Elastic Beanstalk: HTTPS",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="An HTTP load balancer listener transmits user data including session tokens in plaintext.",
+                recommendation="Configure an HTTPS listener with an ACM certificate. Add a redirect rule for port 80 -> 443.",
+                cwe="CWE-319",
+            ))
+        # Check managed updates
+        managed_actions = settings_map.get(("aws:elasticbeanstalk:managedactions", "ManagedActionsEnabled"), "true")
+        if str(managed_actions).lower() == "false":
+            self._add(Finding(
+                rule_id="AWS-EB-002",
+                name=f"Elastic Beanstalk environment '{rid}' managed platform updates disabled",
+                category="Elastic Beanstalk: Updates",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Disabling managed updates leaves the environment running outdated platform versions with known vulnerabilities.",
+                recommendation="Enable ManagedActionsEnabled and set a maintenance window for automatic platform updates.",
+                cwe="CWE-1104",
+            ))
+        # Check enhanced health reporting
+        health_system = settings_map.get(("aws:elasticbeanstalk:healthreporting:system", "SystemType"), "enhanced")
+        if str(health_system).lower() == "basic":
+            self._add(Finding(
+                rule_id="AWS-EB-003",
+                name=f"Elastic Beanstalk environment '{rid}' uses basic health reporting",
+                category="Elastic Beanstalk: Monitoring",
+                severity="LOW",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Basic health reporting provides limited metrics, reducing visibility into environment health and performance.",
+                recommendation="Set SystemType: enhanced for detailed health metrics and CloudWatch integration.",
+                cwe="CWE-778",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — SageMaker Notebook Instance (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_sagemaker_notebook(self, rid, props, fp):
+        if props.get("DirectInternetAccess", "Enabled") == "Enabled":
+            self._add(Finding(
+                rule_id="AWS-SAGE-001",
+                name=f"SageMaker notebook '{rid}' has direct internet access enabled",
+                category="SageMaker: Network",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Direct internet access allows data exfiltration and bypasses VPC-level security controls.",
+                recommendation="Set DirectInternetAccess: Disabled. Route outbound traffic through a VPC with a NAT gateway.",
+                cwe="CWE-284",
+            ))
+        if not props.get("KmsKeyId"):
+            self._add(Finding(
+                rule_id="AWS-SAGE-002",
+                name=f"SageMaker notebook '{rid}' EBS volume not encrypted with CMK",
+                category="SageMaker: Encryption",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Without a CMK, the notebook's EBS volume uses the AWS-managed key, limiting key access control.",
+                recommendation="Specify KmsKeyId with a customer-managed KMS key.",
+                cwe="CWE-311",
+            ))
+        if not props.get("SubnetId"):
+            self._add(Finding(
+                rule_id="AWS-SAGE-003",
+                name=f"SageMaker notebook '{rid}' not placed in a VPC subnet",
+                category="SageMaker: Network",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Notebooks not placed in a VPC use direct internet routing, bypassing network security controls.",
+                recommendation="Specify SubnetId and SecurityGroupIds to place the notebook inside your VPC.",
+                cwe="CWE-284",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — SageMaker Domain (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_sagemaker_domain(self, rid, props, fp):
+        app_network = props.get("AppNetworkAccessType", "PublicInternetOnly")
+        if app_network == "PublicInternetOnly":
+            self._add(Finding(
+                rule_id="AWS-SAGE-004",
+                name=f"SageMaker Domain '{rid}' app network access is PublicInternetOnly",
+                category="SageMaker: Network",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Public internet access for SageMaker Studio applications bypasses VPC controls and exposes ML workloads to the internet.",
+                recommendation="Set AppNetworkAccessType: VpcOnly and configure appropriate VPC, subnets, and security groups.",
+                cwe="CWE-284",
+            ))
+        default_user = props.get("DefaultUserSettings", {})
+        if not default_user.get("ExecutionRole"):
+            self._add(Finding(
+                rule_id="AWS-SAGE-005",
+                name=f"SageMaker Domain '{rid}' default user has no execution role",
+                category="SageMaker: IAM",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Without a defined execution role, SageMaker Studio users may inherit overly permissive default permissions.",
+                recommendation="Specify an ExecutionRole with least-privilege permissions in DefaultUserSettings.",
+                cwe="CWE-269",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — Bedrock Agent (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_bedrock_agent(self, rid, props, fp):
+        if not props.get("GuardrailConfiguration"):
+            self._add(Finding(
+                rule_id="AWS-BR-001",
+                name=f"Bedrock agent '{rid}' has no guardrail configured",
+                category="Bedrock: Guardrails",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="A Bedrock agent without guardrails can produce harmful, biased, or policy-violating content with no safety controls.",
+                recommendation="Attach a GuardrailConfiguration with content filters, topic policies, and sensitive data redaction enabled.",
+                cwe="CWE-284",
+            ))
+        idle_timeout = props.get("IdleSessionTTLInSeconds")
+        if idle_timeout is None or int(idle_timeout) > 3600:
+            self._add(Finding(
+                rule_id="AWS-BR-002",
+                name=f"Bedrock agent '{rid}' session TTL exceeds 1 hour or not set",
+                category="Bedrock: Session Management",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Long or unlimited session TTLs keep agent conversations active longer than necessary, increasing exposure to session hijacking.",
+                recommendation="Set IdleSessionTTLInSeconds to 3600 (1 hour) or less.",
+                cwe="CWE-613",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — EBS Volume (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_ebs_volume(self, rid, props, fp):
+        if props.get("Encrypted") is not True:
+            self._add(Finding(
+                rule_id="AWS-EBS-001",
+                name=f"EBS volume '{rid}' is not encrypted",
+                category="EBS: Encryption",
+                severity="HIGH",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Unencrypted EBS volumes expose data at rest if the underlying physical storage media is accessed outside AWS.",
+                recommendation="Set Encrypted: true. Specify KmsKeyId with a CMK. Enable account-level EBS encryption by default in the EC2 console.",
+                cwe="CWE-311",
+            ))
+        if props.get("Encrypted") is True and not props.get("KmsKeyId"):
+            self._add(Finding(
+                rule_id="AWS-EBS-002",
+                name=f"EBS volume '{rid}' encrypted with AWS-managed key, not CMK",
+                category="EBS: Encryption",
+                severity="LOW",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Using the AWS-managed key (alias/aws/ebs) limits key rotation control and access auditing compared to a CMK.",
+                recommendation="Specify KmsKeyId with a customer-managed KMS key for full control over key policy and rotation.",
+                cwe="CWE-311",
+            ))
+
+    # ----------------------------------------------------------
+    # CF check methods — Step Functions State Machine (v1.1.0)
+    # ----------------------------------------------------------
+    def _cf_stepfunctions(self, rid, props, fp):
+        logging_config = props.get("LoggingConfiguration", {})
+        log_level = logging_config.get("Level", "OFF")
+        if log_level == "OFF":
+            self._add(Finding(
+                rule_id="AWS-SFN-001",
+                name=f"Step Functions state machine '{rid}' logging is OFF",
+                category="Step Functions: Logging",
+                severity="MEDIUM",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="With logging disabled, execution history and errors are not captured to CloudWatch Logs, hampering debugging and auditing.",
+                recommendation="Set Level to ALL or ERROR in LoggingConfiguration and specify a CloudWatch log group destination.",
+                cwe="CWE-778",
+            ))
+        tracing = props.get("TracingConfiguration", {})
+        if tracing.get("Enabled") is not True:
+            self._add(Finding(
+                rule_id="AWS-SFN-002",
+                name=f"Step Functions state machine '{rid}' X-Ray tracing disabled",
+                category="Step Functions: Tracing",
+                severity="LOW",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="Without X-Ray tracing, distributed execution traces across Lambda and other integrated services are unavailable.",
+                recommendation="Set Enabled: true in TracingConfiguration.",
+                cwe="CWE-778",
+            ))
+        definition = props.get("DefinitionString", "") or ""
+        if isinstance(definition, dict):
+            definition = json.dumps(definition)
+        if definition and '"Catch"' not in definition and '"Retry"' not in definition:
+            self._add(Finding(
+                rule_id="AWS-SFN-003",
+                name=f"Step Functions state machine '{rid}' has no error handling (Catch/Retry)",
+                category="Step Functions: Resilience",
+                severity="LOW",
+                file_path=str(fp), line_num=None, line_content=f"Resource: {rid}",
+                description="State machines without Catch or Retry blocks will fail silently on transient errors, causing data loss or stuck workflows.",
+                recommendation="Add Retry with exponential backoff and Catch clauses to all task states.",
+                cwe="CWE-755",
             ))
 
     # ----------------------------------------------------------

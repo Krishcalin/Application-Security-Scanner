@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Test template exercising v1.1.0 gap-service checks"
+
+Resources:
+
+  # CloudWatch Alarm — no actions
+  NoActionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NoActionAlarm
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 90
+      ComparisonOperator: GreaterThanThreshold
+
+  # CloudWatch Log Group — no retention, no KMS
+  UnretainedLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /app/unretained
+
+  # VPC — DNS hostnames explicitly disabled
+  InsecureVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsHostnames: false
+
+  # Subnet — auto-assigns public IPs
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref InsecureVPC
+      CidrBlock: "10.0.1.0/24"
+      MapPublicIpOnLaunch: true
+
+  # VPC Flow Log — only ACCEPT traffic
+  AcceptOnlyFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      ResourceId: !Ref InsecureVPC
+      ResourceType: VPC
+      TrafficType: ACCEPT
+      LogDestination: arn:aws:s3:::my-flow-log-bucket
+
+  # WAFv2 — default action ALLOW, no rules
+  OpenWAF:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: OpenWAF
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      Rules: []
+      VisibilityConfig:
+        SampledRequestsEnabled: false
+        CloudWatchMetricsEnabled: false
+        MetricName: OpenWAF
+
+  # GuardDuty — explicitly disabled
+  DisabledDetector:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: false
+
+  # AWS Config — not all supported, no global resources
+  PartialConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Properties:
+      Name: PartialRecorder
+      RecordingGroup:
+        AllSupported: false
+        IncludeGlobalResourceTypes: false
+        ResourceTypes:
+          - AWS::S3::Bucket
+
+  # Elastic Beanstalk — HTTP, managed updates off, basic health
+  InsecureBeanstalk:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: MyApp
+      EnvironmentName: Insecure
+      OptionSettings:
+        - Namespace: aws:elb:listener
+          OptionName: ListenerProtocol
+          Value: HTTP
+        - Namespace: aws:elasticbeanstalk:managedactions
+          OptionName: ManagedActionsEnabled
+          Value: "false"
+        - Namespace: aws:elasticbeanstalk:healthreporting:system
+          OptionName: SystemType
+          Value: basic
+
+  # SageMaker Notebook — direct internet, no KMS, no subnet
+  ExposedNotebook:
+    Type: AWS::SageMaker::NotebookInstance
+    Properties:
+      InstanceType: ml.t3.medium
+      RoleArn: arn:aws:iam::123456789012:role/MyRole
+      DirectInternetAccess: Enabled
+
+  # SageMaker Domain — public internet, no execution role default
+  PublicDomain:
+    Type: AWS::SageMaker::Domain
+    Properties:
+      DomainName: PublicDomain
+      AuthMode: IAM
+      AppNetworkAccessType: PublicInternetOnly
+      VpcId: !Ref InsecureVPC
+      SubnetIds:
+        - !Ref PublicSubnet
+      DefaultUserSettings: {}
+
+  # Bedrock Agent — no guardrail, session TTL > 1 hour
+  UnguardedAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: UnguardedAgent
+      FoundationModel: anthropic.claude-v2
+      IdleSessionTTLInSeconds: 7200
+
+  # EBS Volume — not encrypted
+  UnencryptedVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: us-east-1a
+      Size: 100
+      Encrypted: false
+
+  # Step Functions — logging OFF, tracing disabled, no error handling
+  BareStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: BareStateMachine
+      RoleArn: arn:aws:iam::123456789012:role/SFNRole
+      LoggingConfiguration:
+        Level: "OFF"
+      TracingConfiguration:
+        Enabled: false
+      DefinitionString: |
+        {
+          "StartAt": "DoWork",
+          "States": {
+            "DoWork": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:123456789012:function:MyFunc",
+              "End": true
+            }
+          }
+        }

@@ -2,7 +2,8 @@
 
 A collection of self-contained security scanners covering **Static Application Security Testing (SAST)**
 for source code, **Infrastructure-as-Code (IaC) security analysis**, **Network Device Security**
-for Cisco routers and switches, and **SaaS Security Posture Management (SSPM)** for cloud SaaS platforms.
+for Cisco routers and switches, **Firewall Security** for Palo Alto NGFWs,
+and **SaaS Security Posture Management (SSPM)** for cloud SaaS platforms.
 
 ---
 
@@ -20,6 +21,7 @@ for Cisco routers and switches, and **SaaS Security Posture Management (SSPM)** 
 | `successfactors_scanner.py` | SSPM | SAP SuccessFactors live instance (OData v2 API) | 1.0.0 |
 | `m365_scanner.py` | SSPM | Microsoft 365 + Entra ID (Microsoft Graph API) | 1.0.0 |
 | `cisco_scanner.py` | Network | Cisco IOS/IOS-XE routers & switches (live SSH/SNMP) | 1.0.0 |
+| `paloalto_scanner.py` | Firewall | Palo Alto NGFW PAN-OS (live XML API) | 1.0.0 |
 
 ---
 
@@ -437,6 +439,89 @@ python3 cisco_scanner.py -r 10.0.0.0/24 -u admin -p secret --snmp-community myco
 
 ---
 
+## Firewall Security Scanner
+
+### Palo Alto NGFW Scanner (`paloalto_scanner.py`) — v1.0.0
+
+Connects to the **PAN-OS XML API** on a Palo Alto Networks Next-Generation Firewall (or Panorama)
+to audit security policy rules for risky patterns, check for **known PAN-OS CVEs**, and identify
+**misconfigurations** across 92 rules in 15 categories.
+
+**Authentication**
+
+```bash
+# Username + password
+python3 paloalto_scanner.py -H 192.168.1.1 -u admin -p secret
+
+# Pre-generated API key
+python3 paloalto_scanner.py -H 10.0.0.1 -k <api-key> --json out.json --html out.html
+
+# Panorama management server
+python3 paloalto_scanner.py -H panorama.corp.com -u admin -p secret --panorama --severity HIGH
+```
+
+Environment variable fallback: `PAN_HOST`, `PAN_USERNAME`, `PAN_PASSWORD`, `PAN_API_KEY`
+
+**Known CVE database (20 entries)**
+
+| CVE | PAN-OS Affected | Severity | Description |
+|---|---|---|---|
+| CVE-2024-3400 | 10.2.0–10.2.9, 11.0.0–11.0.4, 11.1.0–11.1.2 | CRITICAL | GlobalProtect command injection (CVSS 10.0, actively exploited) |
+| CVE-2024-0012 | <10.2.12, <11.0.6, <11.1.5, <11.2.4 | CRITICAL | Management interface authentication bypass |
+| CVE-2024-9474 | <10.2.12, <11.0.6, <11.1.5, <11.2.4 | CRITICAL | Management interface privilege escalation |
+| CVE-2020-2021 | <8.1.15, <9.0.9, <9.1.3 | CRITICAL | SAML authentication bypass (CVSS 10.0) |
+| CVE-2021-3064 | <8.1.17 | CRITICAL | GlobalProtect portal buffer overflow (CVSS 9.8) |
+| CVE-2024-5910 | Expedition <1.2.92 | CRITICAL | Expedition missing authentication (CVSS 9.3) |
+| CVE-2024-9463 | Expedition <1.2.96 | CRITICAL | Expedition OS command injection (CVSS 9.9) |
+| CVE-2024-9465 | Expedition <1.2.96 | CRITICAL | Expedition SQL injection (CVSS 9.2) |
+| CVE-2017-15944 | <6.1.19, <7.0.19, <7.1.14, <8.0.7 | CRITICAL | Management interface pre-auth RCE chain |
+| CVE-2019-1579 | <7.1.19, <8.0.12, <8.1.3 | CRITICAL | GlobalProtect pre-auth RCE |
+| CVE-2022-0028 | <8.1.23, <9.0.17, <9.1.16, <10.0.13, <10.1.9, <10.2.4 | HIGH | URL filtering reflected amplification DoS |
+| CVE-2020-2034 | <8.1.15, <9.0.9, <9.1.3 | HIGH | GlobalProtect OS command injection |
+| CVE-2021-3060 | <8.1.20, <9.0.14, <9.1.11, <10.0.8, <10.1.3 | HIGH | OS command injection via web interface |
+| CVE-2024-0008 | <10.1.12, <10.2.10, <11.0.5, <11.1.4 | HIGH | Web management session fixation |
+| CVE-2022-0030 | <8.1.24, <9.0.17, <9.1.15, <10.0.12 | HIGH | Authentication bypass in web management |
+| CVE-2024-3383 | <10.1.12, <10.2.8, <11.0.4, <11.1.2 | HIGH | Cloud Identity Engine auth bypass |
+| CVE-2020-1975 | <8.1.13, <9.0.7 | HIGH | Management interface XSS/RCE chain |
+| CVE-2023-6790 | <9.0.17, <9.1.17, <10.1.12, <10.2.9, <11.0.4 | MEDIUM | Web management XSS |
+| CVE-2023-0007 | <9.0.17, <9.1.16, <10.1.9, <10.2.4 | MEDIUM | Management interface stored XSS |
+| CVE-2023-38046 | <9.1.17, <10.1.12, <10.2.8, <11.0.4, <11.1.2 | MEDIUM | Read system files vulnerability |
+
+**Security check categories (92 rules)**
+
+| Category | Rule IDs | Key Checks |
+|---|---|---|
+| Security Rules | PAN-RULE-001 to 010 | Allow-all rules, `any` application/service/zone, untrust→trust broad access, disabled shadow rules |
+| Dangerous Applications | PAN-APP-001 to 005 | Tor/ultrasurf/psiphon tunnels, remote access (TeamViewer/AnyDesk), P2P, DNS-over-HTTPS, SSH tunneling |
+| Logging & Monitoring | PAN-LOG-001 to 005 | Logging disabled on rules, no log-forwarding profile, no syslog/SNMP trap, log-start without log-end |
+| Security Profiles | PAN-PROF-001 to 008 | Allow rules missing AV, anti-spyware, vulnerability protection, URL filtering, file-blocking, WildFire, profile groups |
+| Threat Prevention | PAN-THREAT-001 to 008 | AV default-only actions, anti-spyware not blocking C2, vulnerability protection gaps, URL filtering not blocking malware/phishing/C2, WildFire missing, DNS Security not enabled |
+| Zone Protection | PAN-ZONE-001 to 003 | Zones without zone protection profile, missing flood/recon protection |
+| Management | PAN-MGMT-001 to 009 | HTTP/Telnet on management, unrestricted permitted-IP, no admin lockout, weak passwords, no idle timeout, SNMPv2c, default admin |
+| NAT Policy | PAN-NAT-001 to 004 | DNAT to any source, bidirectional NAT, any source zone, missing security policy for NAT |
+| Decryption | PAN-DECRYPT-001 to 004 | No SSL decryption, broad exclusions, no forward proxy, expired decryption certs |
+| Dynamic Updates | PAN-UPDATE-001 to 004 | Threat/AV/WildFire updates not scheduled, update interval >24h |
+| High Availability | PAN-HA-001 to 003 | HA not configured, no link/path monitoring |
+| GlobalProtect | PAN-GP-001 to 004 | Non-standard portal port, no MFA/certificate auth, split-tunnel enabled, no HIP checks |
+| Certificates | PAN-CERT-001 to 003 | Self-signed certs, expiring/expired certs, weak key size (<2048 bits) |
+| Network Config | PAN-NET-001 to 002 | DNS proxy on external interface, DHCP server on external interface |
+
+```bash
+# Full scan with username/password
+python3 paloalto_scanner.py -H 192.168.1.1 -u admin -p secret --verbose
+
+# Scan with API key + JSON and HTML reports
+python3 paloalto_scanner.py -H 10.0.0.1 -k LUFRPT1... --json report.json --html report.html
+
+# Panorama scan, HIGH severity only
+python3 paloalto_scanner.py -H panorama.corp.com -u admin -p secret --panorama --severity HIGH
+
+# With SSL verification (for production certs)
+python3 paloalto_scanner.py -H fw.corp.com -u admin -p secret --verify-ssl
+```
+
+---
+
 ## SSPM Scanners
 
 Unlike the SAST and IaC scanners, the SSPM scanners make **live API calls** to running
@@ -604,6 +689,11 @@ All scanners share these CLI options:
 - Python 3.8+
 - `pip install netmiko` (SSH connectivity — required for `--protocol ssh` or `both`)
 - `pip install pysnmp-lextudio` (SNMP v2c — required for `--protocol snmp` or `both`)
+
+### Firewall scanner (`paloalto_scanner.py`)
+
+- Python 3.8+
+- `pip install requests`
 
 ### SSPM scanners (`servicenow_scanner.py`, `successfactors_scanner.py`, `m365_scanner.py`)
 

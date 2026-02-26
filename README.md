@@ -1,8 +1,8 @@
 # Application Security Scanner (ASS)
 
 A collection of self-contained security scanners covering **Static Application Security Testing (SAST)**
-for source code, **Infrastructure-as-Code (IaC) security analysis**, and **SaaS Security Posture
-Management (SSPM)** for cloud SaaS platforms.
+for source code, **Infrastructure-as-Code (IaC) security analysis**, **Network Device Security**
+for Cisco routers and switches, and **SaaS Security Posture Management (SSPM)** for cloud SaaS platforms.
 
 ---
 
@@ -19,6 +19,7 @@ Management (SSPM)** for cloud SaaS platforms.
 | `servicenow_scanner.py` | SSPM | ServiceNow live instance (REST Table API) | 1.0.0 |
 | `successfactors_scanner.py` | SSPM | SAP SuccessFactors live instance (OData v2 API) | 1.0.0 |
 | `m365_scanner.py` | SSPM | Microsoft 365 + Entra ID (Microsoft Graph API) | 1.0.0 |
+| `cisco_scanner.py` | Network | Cisco IOS/IOS-XE routers & switches (live SSH/SNMP) | 1.0.0 |
 
 ---
 
@@ -335,6 +336,107 @@ python3 aws_scanner.py /path/to/terraform/
 
 ---
 
+## Network Security Scanner
+
+### Cisco IOS Security Scanner (`cisco_scanner.py`) — v1.0.0
+
+Scans a LAN IP range to **discover Cisco routers and switches**, **enumerate IOS versions**,
+check for **known CVEs**, and audit the **running-config** for security misconfigurations.
+Supports SSH (netmiko) for full configuration analysis and SNMP v2c (pysnmp) for lightweight
+version enumeration.
+
+**Authentication**
+
+```bash
+python3 cisco_scanner.py \
+  --range 192.168.1.0/24 \
+  --username <user> \
+  --password <pass> \
+  [--enable-password <enable-secret>] \
+  [--protocol ssh|snmp|both] \
+  [--severity HIGH] [--json report.json] [--html report.html] [-v]
+```
+
+Environment variable fallback: `CISCO_RANGE`, `CISCO_USERNAME`, `CISCO_PASSWORD`, `CISCO_ENABLE`, `CISCO_SNMP_COMMUNITY`
+
+**IP range formats supported**
+
+| Format | Example |
+|---|---|
+| CIDR | `192.168.1.0/24` |
+| Start–End | `192.168.1.1-192.168.1.254` or `192.168.1.1-254` |
+| Single IP | `192.168.1.1` |
+| Comma-separated | `192.168.1.1,192.168.1.2,10.0.0.1` |
+
+**Scan protocols**
+
+| Protocol | Dependencies | Capabilities |
+|---|---|---|
+| `ssh` (default) | `pip install netmiko` | Full config analysis + version enumeration |
+| `snmp` | `pip install pysnmp-lextudio` | Lightweight version enumeration + CVE checks only |
+| `both` | Both packages | SNMP for discovery, SSH for deep config analysis |
+
+**Known CVE database (20 entries)**
+
+| CVE | Platform | Severity | Description |
+|---|---|---|---|
+| CVE-2023-20198 | IOS-XE | CRITICAL | Web UI privilege escalation — unauthenticated admin account creation |
+| CVE-2023-20273 | IOS-XE | CRITICAL | Web UI command injection — root-level command execution |
+| CVE-2018-0171 | IOS | CRITICAL | Smart Install RCE — stack-based buffer overflow |
+| CVE-2017-6742 | IOS | CRITICAL | SNMP RCE — multiple buffer overflows in SNMP subsystem |
+| CVE-2017-3881 | IOS | CRITICAL | Telnet CMP RCE — Cluster Management Protocol remote code execution |
+| CVE-2018-0150 | IOS-XE | CRITICAL | Hardcoded credentials — default undocumented privileged account |
+| CVE-2019-12643 | IOS-XE | CRITICAL | REST API authentication bypass — unauthenticated admin access |
+| CVE-2021-34770 | IOS-XE | CRITICAL | CAPWAP RCE — heap buffer overflow in wireless controller |
+| CVE-2018-0167 | IOS | CRITICAL | LLDP/CDP buffer overflow — remote code execution |
+| CVE-2022-20695 | IOS-XE | CRITICAL | Wireless LAN Controller authentication bypass |
+| CVE-2024-20353 | IOS-XE | HIGH | Web UI denial of service — unauthenticated device reload |
+| CVE-2018-0156 | IOS | HIGH | Smart Install DoS — malformed messages cause device reload |
+| CVE-2021-1435 | IOS-XE | HIGH | Web UI command injection — authenticated RCE |
+| CVE-2020-3566 | IOS | HIGH | IGMP/DVMRP memory exhaustion denial of service |
+| CVE-2019-1737 | IOS | HIGH | IP SLA responder DoS — memory corruption |
+| CVE-2024-20359 | IOS | HIGH | Persistent local code execution from ROM monitor |
+| CVE-2019-1862 | IOS-XE | HIGH | Web UI command injection — admin-level arbitrary command execution |
+| CVE-2020-3580 | IOS-XE | MEDIUM | Stored XSS in web management interface |
+| CVE-2020-3200 | IOS | MEDIUM | Secure Shell DoS — crafted SSH session causes device reload |
+| CVE-2016-6380 | IOS | MEDIUM | DNS response parsing DoS — malformed DNS packets cause reload |
+
+**Misconfiguration check categories (48 rules)**
+
+| Category | Rule IDs | Key Checks |
+|---|---|---|
+| Authentication | CISCO-AUTH-001 to 006 | `enable password` vs `enable secret`, `service password-encryption`, AAA, plaintext passwords |
+| SSH Security | CISCO-SSH-001 to 004 | SSH v1 vs v2, authentication timeout, retries |
+| Remote Access (VTY) | CISCO-VTY-001 to 005 | Telnet enabled, no `access-class`, no `exec-timeout`, transport restriction, login method |
+| SNMP Security | CISCO-SNMP-001 to 004 | Default `public`/`private` community strings, RW access, no SNMPv3 |
+| Logging | CISCO-LOG-001 to 004 | No remote syslog, no buffered logging, no timestamps, no rate-limit |
+| NTP | CISCO-NTP-001 to 003 | No NTP server, no NTP authentication, no access-group |
+| Network Services | CISCO-SVC-001 to 007 | HTTP server enabled, IP source routing, directed broadcast, TCP/UDP small servers, finger |
+| Interface Security | CISCO-INTF-001 to 004 | Proxy ARP, unused interfaces not shut down, ICMP redirects, ICMP unreachables |
+| Discovery Protocols | CISCO-CDP-001 to 002 | CDP globally enabled, LLDP enabled |
+| Banners | CISCO-BAN-001 to 002 | No login banner, no MOTD banner |
+| Console/AUX Security | CISCO-CON-001 to 003 | Console exec-timeout, console login, AUX port not disabled |
+| Routing Protocols | CISCO-ROUTE-001 to 002 | OSPF authentication, EIGRP authentication |
+| Layer 2 Security | CISCO-L2-001 to 004 | DHCP snooping, port security, BPDU guard, STP root guard |
+| Control Plane | CISCO-CP-001 to 002 | No control-plane policing (CoPP), TCP keepalives |
+| Misc Hardening | CISCO-MISC-001 to 003 | Gratuitous ARP, debug timestamps, IP options processing |
+
+```bash
+# Scan a /24 subnet via SSH
+python3 cisco_scanner.py -r 192.168.1.0/24 -u admin -p secret --json report.json --html report.html
+
+# Scan a single device with enable password
+python3 cisco_scanner.py -r 10.0.0.1 -u admin -p secret --enable-password en123 -v
+
+# SNMP-only discovery (version + CVE checks, no config analysis)
+python3 cisco_scanner.py -r 192.168.1.0/24 --protocol snmp --snmp-community mycomm
+
+# Both protocols: SNMP for discovery, SSH for deep analysis
+python3 cisco_scanner.py -r 10.0.0.0/24 -u admin -p secret --snmp-community mycomm --protocol both
+```
+
+---
+
 ## SSPM Scanners
 
 Unlike the SAST and IaC scanners, the SSPM scanners make **live API calls** to running
@@ -496,6 +598,12 @@ All scanners share these CLI options:
 - Python 3.8+
 - No third-party dependencies (standard library only)
 - `PyYAML` is used by `aws_scanner.py` — install with `pip install pyyaml`
+
+### Network scanner (`cisco_scanner.py`)
+
+- Python 3.8+
+- `pip install netmiko` (SSH connectivity — required for `--protocol ssh` or `both`)
+- `pip install pysnmp-lextudio` (SNMP v2c — required for `--protocol snmp` or `both`)
 
 ### SSPM scanners (`servicenow_scanner.py`, `successfactors_scanner.py`, `m365_scanner.py`)
 

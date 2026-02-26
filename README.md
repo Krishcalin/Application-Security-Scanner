@@ -1,35 +1,43 @@
-# Java, PHP, Python & MERN Security Scanner v4.0
 # Application Security Scanner (ASS)
 
-A static analysis tool that scans Java, PHP, Python (including AI/agentic),
-and MERN stack (MongoDB / Express / React / Node.js) applications for security
-vulnerabilities and misconfigurations.
-
-## What It Scans
-
-| Input type | Language / Stack | Description |
-|---|---|---|
-| `.java` source files | Java | SAST rules — 20+ vulnerability patterns |
-| `pom.xml` | Java | Maven dependency CVE lookup |
-| `build.gradle` / `build.gradle.kts` | Java | Gradle dependency CVE lookup |
-| `.war` / `.jar` / `.ear` archives | Java | Embedded configs, nested JARs, `pom.properties` |
-| `web.xml` | Java | Servlet misconfiguration checks |
-| `.properties` / `.yml` / `.yaml` | Java | Spring Boot misconfiguration checks |
-| `.php` / `.phtml` / `.php5–8` | PHP | SAST rules — 15+ vulnerability patterns |
-| `php.ini` | PHP | Runtime misconfiguration checks |
-| `.py` / `.pyw` source files | Python | SAST rules — 50+ patterns incl. AI/agentic |
-| `requirements.txt` | Python | Dependency CVE lookup (18 packages) |
-| `Pipfile` | Python | Dependency CVE lookup |
-| `pyproject.toml` | Python | Dependency CVE lookup |
-| `.js` / `.jsx` / `.ts` / `.tsx` / `.mjs` / `.cjs` | MERN / Node.js | SAST rules — 25+ vulnerability patterns |
-| `package.json` | MERN / Node.js | npm dependency CVE lookup (20 packages) |
-| `.env` / `.env.*` | MERN / Node.js | Environment misconfiguration checks |
+A collection of self-contained security scanners covering **Static Application Security Testing (SAST)**
+for source code, **Infrastructure-as-Code (IaC) security analysis**, and **SaaS Security Posture
+Management (SSPM)** for cloud SaaS platforms.
 
 ---
 
-## Vulnerability Categories
+## Scanners at a Glance
 
-### Java SAST (source code patterns)
+| Scanner | Type | Target | Version |
+|---------|------|--------|---------|
+| `java_scanner.py` | SAST | Java source, Maven/Gradle, WAR/JAR, Spring Boot | 4.0.0 |
+| `php_scanner.py` | SAST | PHP source, `php.ini` | 4.0.0 |
+| `python_scanner.py` | SAST | Python source, requirements/Pipfile/pyproject.toml | 4.0.0 |
+| `mern_scanner.py` | SAST | JS/TS source, package.json, `.env` | 4.0.0 |
+| `owasp_llm_scanner.py` | SAST | Python/JS AI & LLM applications (OWASP LLM Top 10) | 1.0.0 |
+| `aws_scanner.py` | IaC | CloudFormation (YAML/JSON) + Terraform (`.tf`) | 1.1.0 |
+| `servicenow_scanner.py` | SSPM | ServiceNow live instance (REST Table API) | 1.0.0 |
+| `successfactors_scanner.py` | SSPM | SAP SuccessFactors live instance (OData v2 API) | 1.0.0 |
+| `m365_scanner.py` | SSPM | Microsoft 365 + Entra ID (Microsoft Graph API) | 1.0.0 |
+
+---
+
+## SAST Scanners
+
+### Java Scanner (`java_scanner.py`)
+
+**What it scans**
+
+| Input type | Description |
+|---|---|
+| `.java` source files | SAST rules — 20+ vulnerability patterns |
+| `pom.xml` | Maven dependency CVE lookup |
+| `build.gradle` / `build.gradle.kts` | Gradle dependency CVE lookup |
+| `.war` / `.jar` / `.ear` archives | Embedded configs, nested JARs, `pom.properties` |
+| `web.xml` | Servlet misconfiguration checks |
+| `.properties` / `.yml` / `.yaml` | Spring Boot misconfiguration checks |
+
+**Vulnerability categories**
 
 - **Insecure Deserialization** — `ObjectInputStream`, `XMLDecoder`, `XStream`, `SnakeYAML`
 - **SQL Injection** — string-concatenated JDBC queries
@@ -44,91 +52,7 @@ vulnerabilities and misconfigurations.
 - **Disabled SSL/TLS Certificate Validation**
 - **Log Injection** (including Log4Shell trigger patterns)
 
-### PHP SAST (source code patterns)
-
-- **Remote Code Execution** — `eval()`, `preg_replace` with `/e` modifier
-- **Command Injection** — `system()`, `exec()`, `shell_exec()`, `passthru()`, backtick operator
-- **SQL Injection** — string-concatenated MySQL / MySQLi queries
-- **Path Traversal / LFI / RFI** — `include`/`require` with user input, `file_get_contents`
-- **Cross-Site Scripting (XSS)** — unescaped `echo $_GET/POST/REQUEST`
-- **Unsafe Deserialization** — `unserialize()` with user-supplied data
-- **File Upload Vulnerabilities** — no extension validation
-- **Hardcoded Credentials**
-- **Weak Cryptography** — `md5()`, `sha1()` for passwords
-- **Open Redirect** — `header("Location: $_GET[...]")`
-- **SSRF** — `curl_exec()` with user-controlled URL
-- **Log Injection**
-
-### Python SAST (source code patterns)
-
-- **Insecure Deserialization** — `pickle.loads()`, `yaml.load()` (unsafe loader), `marshal.loads()`
-- **Remote Code Execution** — `eval()`, `exec()` with user input; LLM output piped to `eval`/`exec`
-- **Command Injection** — `os.system()`, `subprocess.call(shell=True)`, `os.popen()`;
-  LLM output piped to `subprocess.run`
-- **SQL Injection** — f-string / `%`-format / `.format()` queries; Django `raw()` with concatenation
-- **Path Traversal** — `open()` with `request.args` / user-supplied path
-- **SSRF** — `requests.get()`, `urllib.request.urlopen()` with user-controlled URL
-- **Server-Side Template Injection (SSTI)** — `Jinja2.Template(user_input)`,
-  `render_template_string(user_input)`
-- **Open Redirect** — Flask `redirect(request.args[...])`
-- **Weak Cryptography** — `hashlib.md5`, `hashlib.sha1`, `random` module for security tokens
-- **XML External Entity (XXE)** — `lxml.etree.XMLParser(resolve_entities=True)`,
-  `xml.etree.ElementTree` (not defused)
-- **Hardcoded Credentials / AI API Keys** — passwords, `sk-*` (OpenAI), AWS keys,
-  GCP keys, Django insecure `SECRET_KEY`
-- **Log Injection** — `logging.info/warning/error` with `request.args` data
-- **Insecure Temp Files** — predictable `/tmp/` paths
-- **Flask Misconfigurations** — `app.run(debug=True)`, `SESSION_COOKIE_SECURE=False`
-- **Django Misconfigurations** — `DEBUG=True`, insecure `SECRET_KEY`, `ALLOWED_HOSTS=["*"]`
-- **AI/Agentic-Specific**
-  - `LangChain allow_dangerous_deserialization=True` (arbitrary code execution via model files)
-  - User input concatenated directly into LLM prompt (prompt injection)
-  - `ShellTool` — gives LLM agent unrestricted OS command execution
-  - `PythonREPLTool` — gives LLM agent unrestricted code execution
-  - `load_chain()` without dangerous-deserialization flag (implicit risk)
-
-### MERN Stack SAST (JavaScript / TypeScript source code patterns)
-
-- **NoSQL Injection** — `req.body`/`req.query` passed directly to Mongoose `find()`/`findOne()`;
-  `$where` with user input; Mongoose model constructed from `req.body` (mass assignment / CWE-943)
-- **Command Injection** — `child_process.exec()` / `execSync()` with user-controlled args;
-  `eval()` / `vm.runInNewContext()` with request data (CWE-78, CWE-95)
-- **Path Traversal** — `fs.readFile()` / `fs.writeFile()` / `path.join()` with `req.params`
-  or `req.query` (CWE-22)
-- **Cross-Site Scripting (XSS)** — `dangerouslySetInnerHTML` with user data; `innerHTML` assignment;
-  `document.write()`; `res.send()` with unsanitized request input (CWE-79)
-- **SQL Injection** — Sequelize `.query()` / Knex `.raw()` with template-literal interpolation (CWE-89)
-- **Server-Side Request Forgery (SSRF)** — `axios.get()` / `fetch()` with user-controlled URL (CWE-918)
-- **Open Redirect** — `res.redirect()` with `req.query.url` (CWE-601)
-- **Broken Authentication / JWT** — JWT signed with weak/hardcoded secret; `algorithms: ['none']`
-  bypass; `jwt.verify()` without expiry enforcement (CWE-330, CWE-347, CWE-613)
-- **Prototype Pollution** — `_.merge()` / `_.defaultsDeep()` with `req.body`;
-  `Object.assign({}, req.body)` (CWE-1321)
-- **Hardcoded Credentials** — JWT/session secrets, MongoDB URIs with credentials,
-  API keys / access tokens in source (CWE-798)
-- **Insecure Deserialization** — `node-serialize.unserialize()` (IIFE RCE, CVE-2017-5941);
-  `js-yaml YAML.load()` without SafeLoader (CWE-502)
-- **Security Misconfiguration** — CORS wildcard `*`; missing `helmet()`; cookies without
-  `httpOnly`/`secure` flags (CWE-16, CWE-614, CWE-942)
-- **ReDoS** — `new RegExp(userInput)` with untrusted pattern (CWE-1333)
-
-### .env File Misconfiguration Checks
-
-| Setting | Risk | Severity |
-|---|---|---|
-| `NODE_ENV=development` | Verbose errors / debug info in production | MEDIUM |
-| `JWT_SECRET=secret` (weak/default) | JWT token forgery | CRITICAL |
-| `SESSION_SECRET=changeme` (weak/default) | Session cookie forgery | CRITICAL |
-| `DEBUG=*` | Credentials / internals leaked to logs | MEDIUM |
-| `MONGODB_URI=mongodb://user:pass@…` | Database credentials in plaintext | HIGH |
-| Plaintext `DB_PASSWORD`, `AWS_SECRET_ACCESS_KEY`, etc. | Credential exposure | HIGH |
-| `CORS_ORIGIN=*` | All-origin cross-site requests allowed | MEDIUM |
-
----
-
-## Dependency CVEs
-
-### Java
+**Java dependency CVEs**
 
 | Library | CVE | Severity |
 |---|---|---|
@@ -142,63 +66,38 @@ vulnerabilities and misconfigurations.
 | fastjson < 1.2.68 | CVE-2020-9547 | CRITICAL |
 | h2 < 2.1.210 | CVE-2021-42392 | CRITICAL |
 
-### Python
+```bash
+python3 java_scanner.py /path/to/project [--json report.json] [--severity HIGH] [-v]
+python3 java_scanner.py app.war --json report.json
+python3 java_scanner.py pom.xml --verbose
+```
 
-| Package | CVE | Severity |
-|---|---|---|
-| Django < 2.2.28 | CVE-2022-28347 | CRITICAL |
-| torch < 2.0.1 | CVE-2022-45907 | CRITICAL |
-| mlflow < 2.9.2 | CVE-2023-6977 | CRITICAL |
-| Django < 3.2.21 | CVE-2023-43665 | HIGH |
-| Flask < 2.3.2 | CVE-2023-30861 | HIGH |
-| fastapi < 0.109.1 | CVE-2024-24762 | HIGH |
-| urllib3 < 1.26.5 | CVE-2021-33503 | HIGH |
-| aiohttp < 3.9.2 | CVE-2024-23334 | HIGH |
-| cryptography < 41.0.6 | CVE-2023-49083 | HIGH |
-| paramiko < 2.10.1 | CVE-2022-24302 | HIGH |
-| Pillow < 10.2.0 | CVE-2023-50447 | HIGH |
-| gradio < 4.11.0 | CVE-2024-0964 | HIGH |
-| langchain < 0.0.312 | CVE-2023-46229 | HIGH |
-| transformers < 4.36.0 | CVE-2023-7018 | HIGH |
-| requests < 2.31.0 | CVE-2023-32681 | MEDIUM |
-| urllib3 < 2.0.7 | CVE-2023-45803 | MEDIUM |
-| aiohttp < 3.9.4 | CVE-2024-27306 | MEDIUM |
-| Jinja2 < 3.1.3 | CVE-2024-22195 | MEDIUM |
-| PyYAML < 6.0.1 | CVE-2022-1769 | MEDIUM |
-| celery < 4.4.0 | CVE-2021-23727 | HIGH |
-| SQLAlchemy < 1.4.0 | CVE-2019-7548 | HIGH |
+---
 
-### npm / Node.js (MERN)
+### PHP Scanner (`php_scanner.py`)
 
-| Package | CVE | Severity |
-|---|---|---|
-| minimist < 1.2.6 | CVE-2021-44906 | CRITICAL |
-| ejs < 3.1.7 | CVE-2022-29078 (SSTI → RCE) | CRITICAL |
-| lodash < 4.17.21 | CVE-2021-23337 (Command Injection) | HIGH |
-| lodash < 4.17.19 | CVE-2020-8203 (Prototype Pollution) | HIGH |
-| express < 4.19.2 | CVE-2024-29041 (Open Redirect) | MEDIUM |
-| mongoose < 7.6.3 | CVE-2023-3696 (Prototype Pollution) | HIGH |
-| jsonwebtoken < 9.0.0 | CVE-2022-23529 (Insecure Default Algorithm) | HIGH |
-| jsonwebtoken < 9.0.0 | CVE-2022-23540 (ReDoS) | MEDIUM |
-| axios < 0.21.2 | CVE-2021-3749 (ReDoS) | HIGH |
-| axios < 1.6.0 | CVE-2023-45857 (CSRF Token Exposure) | MEDIUM |
-| node-fetch < 2.6.7 | CVE-2022-0235 (Header Leakage on Redirect) | HIGH |
-| ejs < 3.1.10 | CVE-2024-33883 (Prototype Pollution → XSS) | HIGH |
-| multer < 1.4.5-lts.1 | CVE-2022-24434 (DoS) | HIGH |
-| socket.io < 4.6.2 | CVE-2023-31125 (DoS) | HIGH |
-| json5 < 2.2.2 | CVE-2022-46175 (Prototype Pollution) | HIGH |
-| body-parser < 1.20.3 | CVE-2024-45590 (DoS) | HIGH |
-| cross-spawn < 7.0.5 | CVE-2024-21538 (ReDoS) | HIGH |
-| path-to-regexp < 0.1.12 | CVE-2024-45296 (ReDoS) | HIGH |
-| tough-cookie < 4.1.3 | CVE-2023-26136 (Prototype Pollution) | HIGH |
-| ws < 8.17.1 | CVE-2024-37890 (DoS) | HIGH |
-| next < 14.1.1 | CVE-2024-34351 (SSRF) | HIGH |
-| next < 13.5.1 | CVE-2023-46298 (DoS) | HIGH |
-| passport < 0.6.0 | CVE-2022-25896 (Session Fixation) | MEDIUM |
-| serialize-javascript < 6.0.1 | CVE-2022-25878 (ReDoS) | MEDIUM |
-| semver < 7.5.2 | CVE-2022-25883 (ReDoS) | MEDIUM |
+**What it scans**
 
-### PHP Misconfiguration Checks (`php.ini`)
+| Input type | Description |
+|---|---|
+| `.php` / `.phtml` / `.php5–8` | SAST rules — 15+ vulnerability patterns |
+| `php.ini` | Runtime misconfiguration checks |
+
+**Vulnerability categories**
+
+- **Remote Code Execution** — `eval()`, `preg_replace` with `/e` modifier
+- **Command Injection** — `system()`, `exec()`, `shell_exec()`, `passthru()`, backtick operator
+- **SQL Injection** — string-concatenated MySQL / MySQLi queries
+- **Path Traversal / LFI / RFI** — `include`/`require` with user input, `file_get_contents`
+- **Cross-Site Scripting (XSS)** — unescaped `echo $_GET/POST/REQUEST`
+- **Unsafe Deserialization** — `unserialize()` with user-supplied data
+- **File Upload Vulnerabilities** — no extension validation
+- **Hardcoded Credentials**
+- **Weak Cryptography** — `md5()`, `sha1()` for passwords
+- **Open Redirect** — `header("Location: $_GET[...]")`
+- **SSRF** — `curl_exec()` with user-controlled URL
+
+**`php.ini` misconfiguration checks**
 
 | Setting | Risk | Severity |
 |---|---|---|
@@ -211,142 +110,458 @@ vulnerabilities and misconfigurations.
 | `session.cookie_secure` not set | Cookie transmitted over HTTP | HIGH |
 | `disable_functions` empty | Dangerous functions accessible | LOW |
 
+```bash
+python3 php_scanner.py /var/www/html [--json report.json] [--severity HIGH] [-v]
+python3 php_scanner.py php.ini --verbose
+```
+
 ---
 
-## Usage
+### Python Scanner (`python_scanner.py`)
 
-```
-python3 java_scanner.py <target> [options]
-```
+**What it scans**
 
-### Arguments
-
-| Argument | Description |
+| Input type | Description |
 |---|---|
-| `target` | File or directory to scan |
-| `--json FILE` | Write findings to a JSON report file |
-| `--severity LEVEL` | Show only CRITICAL / HIGH / MEDIUM / LOW / INFO (and above) |
-| `--verbose`, `-v` | Print each file as it is scanned |
+| `.py` / `.pyw` source files | SAST rules — 50+ patterns incl. AI/agentic |
+| `requirements.txt` | Dependency CVE lookup (18+ packages) |
+| `Pipfile` | Dependency CVE lookup |
+| `pyproject.toml` | Dependency CVE lookup |
 
-### Examples
+**Vulnerability categories**
+
+- **Insecure Deserialization** — `pickle.loads()`, `yaml.load()` (unsafe loader), `marshal.loads()`
+- **Remote Code Execution** — `eval()`, `exec()` with user input; LLM output piped to `eval`/`exec`
+- **Command Injection** — `os.system()`, `subprocess.call(shell=True)`, `os.popen()`
+- **SQL Injection** — f-string / `%`-format / `.format()` queries; Django `raw()` with concatenation
+- **Path Traversal** — `open()` with `request.args` / user-supplied path
+- **SSRF** — `requests.get()`, `urllib.request.urlopen()` with user-controlled URL
+- **Server-Side Template Injection (SSTI)** — `Jinja2.Template(user_input)`, `render_template_string(user_input)`
+- **Open Redirect** — Flask `redirect(request.args[...])`
+- **Weak Cryptography** — `hashlib.md5`, `hashlib.sha1`, `random` module for security tokens
+- **XML External Entity (XXE)** — `lxml.etree.XMLParser(resolve_entities=True)`
+- **Hardcoded Credentials / AI API Keys** — `sk-*` (OpenAI), AWS keys, GCP keys, Django `SECRET_KEY`
+- **Flask / Django Misconfigurations** — `DEBUG=True`, `SESSION_COOKIE_SECURE=False`, `ALLOWED_HOSTS=["*"]`
+- **AI/Agentic-specific** — `LangChain allow_dangerous_deserialization=True`, `ShellTool`, `PythonREPLTool`, prompt injection
+
+**Python dependency CVEs**
+
+| Package | CVE | Severity |
+|---|---|---|
+| Django < 2.2.28 | CVE-2022-28347 | CRITICAL |
+| torch < 2.0.1 | CVE-2022-45907 | CRITICAL |
+| mlflow < 2.9.2 | CVE-2023-6977 | CRITICAL |
+| Flask < 2.3.2 | CVE-2023-30861 | HIGH |
+| fastapi < 0.109.1 | CVE-2024-24762 | HIGH |
+| langchain < 0.0.312 | CVE-2023-46229 | HIGH |
+| transformers < 4.36.0 | CVE-2023-7018 | HIGH |
+| gradio < 4.11.0 | CVE-2024-0964 | HIGH |
+| cryptography < 41.0.6 | CVE-2023-49083 | HIGH |
+| paramiko < 2.10.1 | CVE-2022-24302 | HIGH |
+| Pillow < 10.2.0 | CVE-2023-50447 | HIGH |
+| aiohttp < 3.9.2 | CVE-2024-23334 | HIGH |
+| urllib3 < 1.26.5 | CVE-2021-33503 | HIGH |
+| Jinja2 < 3.1.3 | CVE-2024-22195 | MEDIUM |
+| requests < 2.31.0 | CVE-2023-32681 | MEDIUM |
+| PyYAML < 6.0.1 | CVE-2022-1769 | MEDIUM |
 
 ```bash
-# Scan a Maven Java project
-python3 java_scanner.py /path/to/project
-
-# Scan a WAR file and save JSON report
-python3 java_scanner.py /path/to/app.war --json report.json
-
-# Scan a PHP web root
-python3 java_scanner.py /var/www/html --severity HIGH
-
-# Scan a Python AI agent and its dependencies
-python3 java_scanner.py agent.py --json report.json
-python3 java_scanner.py requirements.txt --verbose
-
-# Scan a MERN stack application (auto-detects .js/.ts, package.json, .env)
-python3 java_scanner.py /path/to/mern-app --json report.json
-
-# Scan a single Express/Node.js file
-python3 java_scanner.py server.js --severity CRITICAL
-
-# Scan npm dependencies for CVEs
-python3 java_scanner.py package.json --verbose
-
-# Scan .env file for secrets and misconfigurations
-python3 java_scanner.py .env --severity HIGH
-
-# Only show CRITICAL findings across a full project
-python3 java_scanner.py /src --severity CRITICAL
-
-# Scan a single pom.xml verbosely
-python3 java_scanner.py pom.xml --verbose
+python3 python_scanner.py /path/to/project [--json report.json] [--severity HIGH] [-v]
+python3 python_scanner.py requirements.txt --verbose
 ```
+
+---
+
+### MERN Stack Scanner (`mern_scanner.py`)
+
+**What it scans**
+
+| Input type | Description |
+|---|---|
+| `.js` / `.jsx` / `.ts` / `.tsx` / `.mjs` / `.cjs` | SAST rules — 25+ vulnerability patterns |
+| `package.json` | npm dependency CVE lookup (20+ packages) |
+| `.env` / `.env.*` | Environment misconfiguration checks |
+
+**Vulnerability categories**
+
+- **NoSQL Injection** — `req.body`/`req.query` passed to Mongoose `find()`/`findOne()`; `$where` with user input; mass assignment via `req.body`
+- **Command Injection** — `child_process.exec()` / `execSync()` with user-controlled args; `eval()` / `vm.runInNewContext()` with request data
+- **Path Traversal** — `fs.readFile()` / `fs.writeFile()` / `path.join()` with `req.params` or `req.query`
+- **Cross-Site Scripting (XSS)** — `dangerouslySetInnerHTML`, `innerHTML`, `document.write()`, `res.send()` with unsanitized input
+- **SQL Injection** — Sequelize `.query()` / Knex `.raw()` with template-literal interpolation
+- **SSRF** — `axios.get()` / `fetch()` with user-controlled URL
+- **Open Redirect** — `res.redirect()` with `req.query.url`
+- **Broken Authentication / JWT** — JWT signed with weak/hardcoded secret; `algorithms: ['none']` bypass; `jwt.verify()` without expiry
+- **Prototype Pollution** — `_.merge()` / `_.defaultsDeep()` with `req.body`; `Object.assign({}, req.body)`
+- **Hardcoded Credentials** — JWT/session secrets, MongoDB URIs with credentials, API keys in source
+- **Insecure Deserialization** — `node-serialize.unserialize()` (IIFE RCE, CVE-2017-5941)
+- **Security Misconfiguration** — CORS wildcard `*`; missing `helmet()`; cookies without `httpOnly`/`secure`
+- **ReDoS** — `new RegExp(userInput)` with untrusted pattern
+
+**`.env` misconfiguration checks**
+
+| Setting | Risk | Severity |
+|---|---|---|
+| `NODE_ENV=development` | Verbose errors in production | MEDIUM |
+| `JWT_SECRET=secret` (weak/default) | JWT token forgery | CRITICAL |
+| `SESSION_SECRET=changeme` (weak/default) | Session cookie forgery | CRITICAL |
+| `DEBUG=*` | Credentials / internals leaked to logs | MEDIUM |
+| `MONGODB_URI=mongodb://user:pass@…` | Database credentials in plaintext | HIGH |
+| Plaintext `DB_PASSWORD`, `AWS_SECRET_ACCESS_KEY`, etc. | Credential exposure | HIGH |
+| `CORS_ORIGIN=*` | All-origin cross-site requests allowed | MEDIUM |
+
+**npm / Node.js dependency CVEs**
+
+| Package | CVE | Severity |
+|---|---|---|
+| minimist < 1.2.6 | CVE-2021-44906 | CRITICAL |
+| ejs < 3.1.7 | CVE-2022-29078 (SSTI → RCE) | CRITICAL |
+| lodash < 4.17.21 | CVE-2021-23337 (Command Injection) | HIGH |
+| jsonwebtoken < 9.0.0 | CVE-2022-23529 (Insecure Default Algorithm) | HIGH |
+| axios < 0.21.2 | CVE-2021-3749 (ReDoS) | HIGH |
+| mongoose < 7.6.3 | CVE-2023-3696 (Prototype Pollution) | HIGH |
+| node-fetch < 2.6.7 | CVE-2022-0235 (Header Leakage on Redirect) | HIGH |
+| multer < 1.4.5-lts.1 | CVE-2022-24434 (DoS) | HIGH |
+| socket.io < 4.6.2 | CVE-2023-31125 (DoS) | HIGH |
+| next < 14.1.1 | CVE-2024-34351 (SSRF) | HIGH |
+| body-parser < 1.20.3 | CVE-2024-45590 (DoS) | HIGH |
+| cross-spawn < 7.0.5 | CVE-2024-21538 (ReDoS) | HIGH |
+| path-to-regexp < 0.1.12 | CVE-2024-45296 (ReDoS) | HIGH |
+| ws < 8.17.1 | CVE-2024-37890 (DoS) | HIGH |
+| tough-cookie < 4.1.3 | CVE-2023-26136 (Prototype Pollution) | HIGH |
+| express < 4.19.2 | CVE-2024-29041 (Open Redirect) | MEDIUM |
+| passport < 0.6.0 | CVE-2022-25896 (Session Fixation) | MEDIUM |
+
+```bash
+python3 mern_scanner.py /path/to/mern-app [--json report.json] [--severity HIGH] [-v]
+python3 mern_scanner.py package.json --verbose
+python3 mern_scanner.py .env --severity HIGH
+```
+
+---
+
+### OWASP LLM Top 10 Scanner (`owasp_llm_scanner.py`)
+
+Targets AI and LLM-powered applications — checks Python code, JavaScript/TypeScript code,
+environment files, YAML configs, and dependency manifests against the
+[OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/).
+
+**What it scans**
+
+| Input type | Description |
+|---|---|
+| `.py` / `.pyw` | 36 Python SAST rules for LLM/AI patterns |
+| `.js` / `.jsx` / `.ts` / `.tsx` / `.mjs` / `.cjs` | 16 JS/TS SAST rules for LLM/AI patterns |
+| `.env` / `.env.*` | 4 environment rules (API key exposure, debug prompts) |
+| `.yaml` / `.yml` | 4 YAML rules (LLM agent configs, unsafe tool definitions) |
+| `requirements.txt` | 13 vulnerable Python LLM package CVEs |
+| `package.json` | 3 vulnerable npm LLM package CVEs |
+
+**OWASP LLM categories covered**
+
+| Category | Key Checks |
+|---|---|
+| **LLM01** Prompt Injection | User input concatenated into prompts, unsanitized tool outputs fed back to LLM |
+| **LLM02** Sensitive Info Disclosure | PII in prompts, training data leakage, system prompt exposure |
+| **LLM03** Supply Chain | Vulnerable LLM packages (LangChain, transformers, mlflow, etc.) |
+| **LLM04** Data & Model Poisoning | Unvalidated training data inputs, `allow_dangerous_deserialization` |
+| **LLM05** Improper Output Handling | LLM output piped to `eval()`, `exec()`, `subprocess`, `render_template_string` |
+| **LLM06** Excessive Agency | `ShellTool`, `PythonREPLTool`, broad tool permissions, unguarded agentic loops |
+| **LLM07** System Prompt Leakage | System prompt logged, reflected in responses, or stored insecurely |
+| **LLM08** Vector & Embedding Weaknesses | Unvalidated RAG inputs, embedding injection |
+| **LLM09** Misinformation | Missing output validation, unchecked model confidence scores |
+| **LLM10** Unbounded Consumption | Missing token limits, rate limiting, cost controls |
+
+```bash
+python3 owasp_llm_scanner.py /path/to/ai-project [--json report.json] [--severity HIGH] [-v]
+python3 owasp_llm_scanner.py agent.py --verbose
+python3 owasp_llm_scanner.py requirements.txt
+```
+
+---
+
+## Infrastructure-as-Code Scanner
+
+### AWS IaC Scanner (`aws_scanner.py`) — v1.1.0
+
+Scans AWS **CloudFormation** templates (YAML/JSON) and **Terraform** (`.tf`) files for
+security misconfigurations across 40+ AWS service types.
+
+**What it scans**
+
+| Input type | Description |
+|---|---|
+| `.yaml` / `.yml` / `.json` | CloudFormation structural analysis (CF_DISPATCH → 42 resource handlers) |
+| `.tf` | Terraform SAST regex rules (60+ rules) |
+
+**Services covered**
+
+| Service | Key Checks |
+|---|---|
+| **S3** | Public ACLs, missing encryption, no versioning, no MFA delete, public access block |
+| **IAM** | Wildcard actions/resources, AdministratorAccess, root API keys, no MFA, inline policies |
+| **EC2 / Security Groups** | SSH/RDP open to 0.0.0.0/0, unrestricted egress, IMDSv2 not required |
+| **RDS** | Public accessibility, no encryption, no backup, no deletion protection, default port |
+| **CloudTrail** | Not enabled, no log validation, no S3 encryption, no CloudWatch integration |
+| **KMS** | Key rotation disabled |
+| **CloudFront** | HTTP allowed (no HTTPS redirect), old TLS minimum, geo restriction absent |
+| **ElastiCache** | No transit/at-rest encryption, no auth token |
+| **ECS** | Privileged containers, host PID/network mode, no readonly root filesystem |
+| **OpenSearch** | Public access, no encryption, node-to-node not encrypted, no audit logging |
+| **Redshift** | Publicly accessible, no encryption, no enhanced VPC routing |
+| **ECR** | Image scan on push disabled, policy allows `*` principal |
+| **DynamoDB** | No KMS encryption, no point-in-time recovery |
+| **Lambda** | No reserved concurrency, no dead letter queue, wildcard resource permissions |
+| **API Gateway** | No authentication, logging disabled, no TLS client cert, default endpoint not disabled |
+| **Secrets Manager** | No KMS encryption, auto-rotate disabled |
+| **CloudWatch Alarms** | No alarm actions configured |
+| **CloudWatch Log Groups** | No retention policy, no KMS encryption |
+| **VPC** | DNS hostnames disabled; subnets auto-assigning public IPs; Flow Logs capturing ACCEPT-only |
+| **WAFv2** | Default action ALLOW with no rules, metrics/sampling disabled |
+| **GuardDuty** | Detector disabled |
+| **AWS Config** | Not recording all supported types, global resource types excluded |
+| **Elastic Beanstalk** | HTTP listener, managed updates off, basic health reporting |
+| **SageMaker Notebooks** | Direct internet access, no KMS, no VPC subnet |
+| **SageMaker Domains** | Public internet access, missing default execution role |
+| **Bedrock Agents** | No guardrail attached, session TTL > 1 hour |
+| **EBS Volumes** | Encryption disabled |
+| **Step Functions** | Logging OFF, X-Ray tracing disabled |
+
+```bash
+python3 aws_scanner.py /path/to/cloudformation/ [--json report.json] [--html report.html] [--severity HIGH] [-v]
+python3 aws_scanner.py template.yaml --verbose
+python3 aws_scanner.py /path/to/terraform/
+```
+
+---
+
+## SSPM Scanners
+
+Unlike the SAST and IaC scanners, the SSPM scanners make **live API calls** to running
+SaaS instances and evaluate the actual configuration state against security best practices.
+
+> **Prerequisite**: `pip install requests` (all three SSPM scanners require it)
+
+---
+
+### ServiceNow SSPM Scanner (`servicenow_scanner.py`) — v1.0.0
+
+Makes live REST Table API calls to a ServiceNow instance and audits its security
+configuration across 40+ checks.
+
+**Authentication**
+
+```bash
+python3 servicenow_scanner.py \
+  --instance <instance-name-or-full-url> \
+  --username <user> \
+  --password <pass> \
+  [--severity HIGH] [--json report.json] [--html report.html] [-v]
+```
+
+Environment variable fallback: `SNOW_INSTANCE`, `SNOW_USERNAME`, `SNOW_PASSWORD`
+
+**Check categories**
+
+| Category | Rule IDs | Key Checks |
+|---|---|---|
+| XSS Prevention | SN-XSS-001 to 004 | `glide.ui.escape_text`, `escape_html_text_area`, Anti-Samy, CSP active |
+| CSRF Protection | SN-CSRF-001 | CSRF token enforcement |
+| Session Management | SN-SESS-001 to 005 | Session timeout ≤ 30 min, guest timeout ≤ 15 min, session rotation, concurrency |
+| Authentication | SN-AUTH-001 to 005 | Max failed attempts ≤ 10, no blank passwords, basic auth scripts, SSO required, MFA |
+| Password Policy | SN-PWD-001 to 007 | Min length ≥ 8, upper/lower/special/digit requirements, lockout count, history |
+| File Attachments | SN-FILE-001 | MIME type validation, dangerous extension blocking (17 extensions) |
+| Transport Security | SN-TLS-001 to 002 | HTTPS redirect, SameSite cookie attribute |
+| Script Security | SN-SCRIPT-001 to 002 | Script sandbox, dynamic forms |
+| Audit & Logging | SN-LOG-001 to 003 | Audit enabled, syslog/SIEM probe, log retention |
+| Users | SN-USER-001 to 006 | Default admin active, stale accounts (>90d), maint role, sec_admin count, MFA on admins, service accounts with admin |
+| OAuth Applications | SN-OAUTH-001 to 004 | Admin scope, stale clients, client sprawl (>10), token lifetime > 1 hr |
+| Access Control Lists | SN-ACL-001 to 003 | Public read on `sys_user`, public write on `sys_*`, public log read |
+| Email Security | SN-EMAIL-001 to 002 | Email allow/deny list, antivirus scanning on attachments |
+
+**ServiceNow tables queried**: `sys_properties`, `sys_user`, `sys_user_has_role`, `oauth_entity`, `sys_acl`, `sys_syslog_config`, `syslog_transaction`
+
+---
+
+### SAP SuccessFactors SSPM Scanner (`successfactors_scanner.py`) — v1.0.0
+
+Makes live OData v2 REST API calls to an SAP SuccessFactors HCM tenant and audits its
+security posture across 30+ checks aligned with SAP Security Best Practices and CIS guidance.
+
+**Authentication**
+
+```bash
+python3 successfactors_scanner.py \
+  --api-host <api4.successfactors.com> \
+  --company-id <COMPANY_ID> \
+  --username <user> \
+  --password <pass> \
+  [--severity HIGH] [--json report.json] [--html report.html] [-v]
+```
+
+Environment variable fallback: `SF_API_HOST`, `SF_COMPANY_ID`, `SF_USERNAME`, `SF_PASSWORD`
+
+**Check categories**
+
+| Category | Rule IDs | Key Checks |
+|---|---|---|
+| Password Policy | SF-PWD-001 to 010 | Min length ≥ 8, complexity (upper/lower/digit/special), max age ≤ 90d, lockout ≤ 10, history ≥ 5, temp password TTL ≤ 24h |
+| Users | SF-USER-001 to 005 | Super-admin count > 5, never-logged-in admins, stale accounts (>90d), service accounts with super-admin, unclassified super-admins |
+| Permission Roles | SF-ROLE-001 to 002 | Broad-scoped roles (access all employees), role count sprawl (>50) |
+| SSO & Authentication | SF-AUTH-001 to 004 | SSO not enabled, MFA not enforced, self-registration open, no IP restrictions |
+| Session Management | SF-SESS-001 to 002 | Session timeout > 30 min, concurrent sessions unlimited |
+| Audit Logging | SF-LOG-001 to 004 | Audit logging enabled, retention < 90d, admin action audit, data access audit |
+| Data Privacy | SF-PRIV-001 to 003 | GDPR data purge jobs, sensitive field masking, consent management config |
+| Integration Security | SF-INT-001 to 004 | OAuth client sprawl (>10), admin-scope OAuth clients, token lifetime > 1 hr, HTTP (non-HTTPS) integration flows |
+
+**OData entities queried**: `PasswordPolicy`, `User`, `CompanyInfo`, `PermissionRole`, `AuditConfiguration`, `OAuthClient`, `PersonalDataPurgeJob`, `ConsentManagementConfig`, `IntegrationFlowDesign`
+
+---
+
+### Microsoft 365 + Entra ID SSPM Scanner (`m365_scanner.py`) — v1.0.0
+
+Makes live Microsoft Graph API (v1.0 + beta) calls using OAuth 2.0 Client Credentials
+flow to audit the security posture of a Microsoft 365 tenant and its Entra ID identity
+provider across 50+ checks.
+
+**Authentication setup (Entra ID App Registration)**
+
+1. Register an app in Entra ID (Azure Portal → App registrations → New registration)
+2. Grant the following **Application** permissions (no user sign-in required):
+   - `Policy.Read.All`, `Directory.Read.All`, `User.Read.All`
+   - `AuditLog.Read.All`, `Reports.Read.All`, `IdentityRiskyUser.Read.All`
+   - `RoleManagement.Read.Directory`, `Application.Read.All`
+   - `SecurityEvents.Read.All`
+3. Grant admin consent
+4. Create a client secret
+
+```bash
+python3 m365_scanner.py \
+  --tenant-id <tenant-id> \
+  --client-id <app-client-id> \
+  --client-secret <secret> \
+  [--severity HIGH] [--json report.json] [--html report.html] [-v]
+```
+
+Environment variable fallback: `M365_TENANT_ID`, `M365_CLIENT_ID`, `M365_CLIENT_SECRET`
+
+**Check categories**
+
+| Category | Rule IDs | Key Checks |
+|---|---|---|
+| Security Defaults | M365-SEC-001 to 002 | Security defaults enabled/disabled, conflicts with Conditional Access |
+| Conditional Access | M365-CA-001 to 008 | MFA for all users, MFA for admins, block legacy auth, risky sign-in remediation, device compliance, named location gaps, app-specific policies |
+| MFA Registration | M365-MFA-001 to 004 | Users without any MFA, admins without MFA, SMS/voice-only MFA (no phishing-resistant), SSPR configured without MFA |
+| Privileged Access | M365-PRIV-001 to 005 | Too many Global Admins (>5), guest users in admin roles, service principals as privileged role owners, permanent PIM assignments (no time-bound), no break-glass account |
+| Password Policy | M365-PWD-001 to 003 | Password expiry enabled, custom banned password list, smart lockout configuration |
+| App Registrations | M365-APP-001 to 005 | High-risk API permissions (Directory.ReadWrite, RoleManagement.ReadWrite, etc.), expired client secrets, secrets expiring within 30 days, secrets instead of certificates, application sprawl |
+| Guest & External Access | M365-GUEST-001 to 004 | Anyone-can-invite guest policy, B2B collaboration restrictions, cross-tenant access settings, external Teams federation |
+| Exchange Online | M365-EXO-001 to 004 | Admin email notifications, auto-forwarding to external addresses, legacy protocols (POP/IMAP/MAPI), SMTP AUTH enabled globally |
+| SharePoint Online | M365-SPO-001 to 004 | Sharing capability (Anyone links), anonymous link expiry, default link sharing type, legacy authentication |
+| Microsoft Teams | M365-TEAMS-001 to 003 | Anonymous meeting join, unrestricted external federation, uncontrolled guest access |
+| Audit Logging | M365-AUDIT-001 to 003 | Unified Audit Log enabled, audit log export policy, per-mailbox audit enabled |
+| Identity Protection | M365-IDP-001 to 005 | High-risk users unaddressed, medium-risk user accumulation, sign-in risk policy absent, user risk policy absent, risky service principals |
+
+**Privileged Entra ID roles monitored**: Global Administrator, User Administrator, Application Administrator, Cloud Application Administrator, Authentication Administrator, Privileged Authentication Administrator, Privileged Role Administrator, Security Administrator, Exchange Administrator, SharePoint Administrator, Teams Administrator, Compliance Administrator, Billing Administrator, Global Reader
+
+**High-risk Graph API permissions flagged**: `Directory.ReadWrite.All`, `RoleManagement.ReadWrite.Directory`, `AppRoleAssignment.ReadWrite.All`, `Application.ReadWrite.All`, `Group.ReadWrite.All`, `User.ReadWrite.All`, `Mail.ReadWrite` (All), `Files.ReadWrite.All`, `Sites.ReadWrite.All`, `DeviceManagementApps.ReadWrite.All`, `Organization.ReadWrite.All`
+
+---
+
+## Common Options
+
+All scanners share these CLI options:
+
+| Option | Description |
+|---|---|
+| `--severity LEVEL` | Show only findings at or above this level (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) |
+| `--json FILE` | Save findings to a JSON report file |
+| `--html FILE` | Save a self-contained HTML report (SSPM and AWS scanners) |
+| `--verbose`, `-v` | Print each file/check as it is processed |
+| `--version` | Print scanner name and version |
 
 ### Exit codes
 
 | Code | Meaning |
 |---|---|
-| `0` | No CRITICAL or HIGH findings |
+| `0` | No CRITICAL or HIGH findings (or all filtered below threshold) |
 | `1` | One or more CRITICAL or HIGH findings detected |
-
----
-
-## Quick Demo
-
-```bash
-python3 java_scanner.py tests/samples/
-```
-
-Expected output (abridged):
-
-```
-[CRITICAL]  SQLI-001              String concatenation in JDBC query
-[CRITICAL]  CMDI-001              Runtime.exec() – potential command injection
-[CRITICAL]  DESER-001             Unsafe ObjectInputStream usage
-[CRITICAL]  DEP-CVE202144228      Vulnerable dependency: log4j-core 2.14.1
-[CRITICAL]  PHPINI-002            allow_url_include enabled – Remote File Inclusion risk
-[CRITICAL]  PHP-RCE-001           eval() with user-controlled input – RCE
-[CRITICAL]  PY-DESER-001          pickle.loads() with user-supplied data – RCE
-[CRITICAL]  PY-RCE-001            eval() with user-controlled input – RCE
-[CRITICAL]  PY-AI-001             LangChain allow_dangerous_deserialization=True
-[CRITICAL]  MERN-NOSQL-001        req.body passed directly to MongoDB/Mongoose query
-[CRITICAL]  MERN-CMDI-001         child_process.exec() with user-controlled input
-[CRITICAL]  MERN-JWT-001          JWT signed with hardcoded or weak secret
-[CRITICAL]  MERN-JWT-002          JWT verification with algorithms: ['none']
-[CRITICAL]  MERN-DESER-001        node-serialize unserialize() with user input – RCE
-[CRITICAL]  ENV-002               JWT_SECRET with weak or default value
-[CRITICAL]  DEP-NODE-CVE202144906 Vulnerable npm dependency: minimist 1.2.5
-[HIGH]      MERN-SEC-002          MongoDB connection string with embedded credentials
-[HIGH]      MERN-NOSQL-003        Mongoose model spread from req.body (mass assignment)
-[HIGH]      MERN-PATH-001         fs.readFile with user-controlled path
-[HIGH]      MERN-SSRF-001         axios/fetch/node-fetch with user-controlled URL
-[HIGH]      DEP-NODE-CVE202123337 Vulnerable npm dependency: lodash 4.17.15
-...
-
-SUMMARY
-CRITICAL  59
-HIGH      105
-MEDIUM    44
-LOW        4
-```
 
 ---
 
 ## Requirements
 
-- Python 3.6+
+### SAST and IaC scanners (`java_scanner.py`, `php_scanner.py`, `python_scanner.py`, `mern_scanner.py`, `owasp_llm_scanner.py`, `aws_scanner.py`)
+
+- Python 3.8+
 - No third-party dependencies (standard library only)
+- `PyYAML` is used by `aws_scanner.py` — install with `pip install pyyaml`
+
+### SSPM scanners (`servicenow_scanner.py`, `successfactors_scanner.py`, `m365_scanner.py`)
+
+- Python 3.8+
+- `pip install requests`
 
 ---
 
 ## Test Samples
 
-The `tests/samples/` directory contains intentionally vulnerable files that exercise
-every scanner rule:
+The `tests/samples/` directory contains intentionally vulnerable files that exercise scanner rules:
 
-| File | Language | What it tests |
+| File | Scanner | What it tests |
 |---|---|---|
-| `VulnerableApp.java` | Java | SQLI, CMDI, DESER, XXE, XSS, CRED, CRYPTO, SSRF, Log4Shell |
-| `pom.xml` | Java | Maven CVEs: Log4Shell, Spring4Shell, Commons-Collections, XStream, Shiro, etc. |
-| `application.properties` | Java | Spring Boot misconfigs: H2 console, actuators, debug mode, weak passwords |
-| `vulnerable.php` | PHP | RCE, CMDI, SQLI, XSS, LFI, unserialize, open redirect |
-| `php.ini` | PHP | All `php.ini` misconfiguration rules |
-| `vulnerable_agent.py` | Python | All 50+ Python SAST rules incl. AI/agentic patterns |
-| `requirements.txt` | Python | 18 known-vulnerable Python packages |
-| `vulnerable_mern.js` | MERN / Node.js | NoSQL injection, CMDI, JWT bypass, prototype pollution, SSRF, XSS, DESER, path traversal |
-| `package.json` | MERN / Node.js | 20 known-vulnerable npm packages (20+ CVEs) |
-| `.env` | MERN / Node.js | Weak secrets, DEBUG wildcard, CORS wildcard, embedded DB credentials |
+| `VulnerableApp.java` | `java_scanner.py` | SQLI, CMDI, DESER, XXE, XSS, CRED, CRYPTO, SSRF, Log4Shell |
+| `pom.xml` | `java_scanner.py` | Maven CVEs: Log4Shell, Spring4Shell, Commons-Collections, XStream, Shiro |
+| `application.properties` | `java_scanner.py` | Spring Boot misconfigs: H2 console, actuators, debug mode |
+| `vulnerable.php` | `php_scanner.py` | RCE, CMDI, SQLI, XSS, LFI, unserialize, open redirect |
+| `php.ini` | `php_scanner.py` | All `php.ini` misconfiguration rules |
+| `vulnerable_agent.py` | `python_scanner.py` / `owasp_llm_scanner.py` | 50+ Python SAST rules incl. AI/agentic patterns, all LLM Top 10 categories |
+| `requirements.txt` | `python_scanner.py` / `owasp_llm_scanner.py` | Known-vulnerable Python packages |
+| `vulnerable_mern.js` | `mern_scanner.py` | NoSQL injection, CMDI, JWT bypass, prototype pollution, SSRF, XSS, DESER |
+| `package.json` | `mern_scanner.py` | 20 known-vulnerable npm packages |
+| `.env` | `mern_scanner.py` | Weak secrets, DEBUG wildcard, CORS wildcard, embedded DB credentials |
+| `gap_services_bad.yaml` | `aws_scanner.py` | CloudFormation template exercising all v1.1.0 gap-service checks: CloudWatch, Logs, VPC, Subnet, FlowLog, WAFv2, GuardDuty, Config, Beanstalk, SageMaker, Bedrock, EBS, StepFunctions |
+
+```bash
+# Run all SAST/IaC test samples
+python3 java_scanner.py tests/samples/
+python3 aws_scanner.py tests/samples/gap_services_bad.yaml --severity LOW
+```
 
 ---
 
-## Reference CVEs Demonstrated
+## Report Formats
 
-The deserialization exploit scripts in this repository correspond to real-world CVEs
-that the scanner detects:
+### Console (all scanners)
+Colour-coded severity output with file/line references and remediation advice.
 
-| File | CVE | Attack vector |
-|---|---|---|
-| `Oracle WebLogic Exploit` | CVE-2015-8103 | Jenkins CLI RMI deserialization |
-| `Java Deserialization Exploits` | CVE-2016-1291 | Cisco Prime HTTP deserialization |
-| `WebSphere Remote Code Execution` | CVE-2015-7450 | IBM WebSphere SOAP deserialization |
+### JSON (`--json report.json`)
+Machine-readable format compatible with all scanners. Schema:
+
+```json
+{
+  "scanner": "m365_scanner v1.0.0",
+  "generated": "2026-02-26T12:00:00",
+  "target": "contoso.onmicrosoft.com",
+  "findings": [
+    {
+      "id": "M365-CA-003",
+      "name": "Legacy Authentication Not Blocked",
+      "category": "Conditional Access",
+      "severity": "HIGH",
+      "file": "conditionalAccessPolicies",
+      "line": null,
+      "code": "No CA policy blocks legacy auth protocols",
+      "description": "...",
+      "recommendation": "...",
+      "cwe": "CWE-287",
+      "cve": null
+    }
+  ],
+  "summary": { "CRITICAL": 2, "HIGH": 8, "MEDIUM": 5, "LOW": 1, "INFO": 0 }
+}
+```
+
+### HTML (`--html report.html`)
+Self-contained dark-themed HTML report with severity chips, filterable findings table,
+and inline remediation guidance. No external dependencies.

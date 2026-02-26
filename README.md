@@ -1,4 +1,3 @@
-# Java, PHP, Python & MERN Security Scanner v4.0
 # Application Security Scanner (ASS)
 
 A static analysis tool that scans Java, PHP, Python (including AI/agentic),

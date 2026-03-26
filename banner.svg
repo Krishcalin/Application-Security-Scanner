@@ -1,215 +1,200 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f0f1a;stop-opacity:1"/>
-      <stop offset="50%" style="stop-color:#1a1a2e;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1"/>
+      <stop offset="0%" style="stop-color:#0a0a14"/>
+      <stop offset="40%" style="stop-color:#101828"/>
+      <stop offset="100%" style="stop-color:#0c1524"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:1"/>
-      <stop offset="50%" style="stop-color:#f39c12;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:1"/>
+    <linearGradient id="topBar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="25%" style="stop-color:#f97316"/>
+      <stop offset="50%" style="stop-color:#eab308"/>
+      <stop offset="75%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
     </linearGradient>
-    <linearGradient id="shield" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#c0392b;stop-opacity:1"/>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#b91c1c"/>
     </linearGradient>
-    <linearGradient id="shieldInner" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#0f0f1a;stop-opacity:1"/>
+    <linearGradient id="scanLine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#22c55e;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#22c55e;stop-opacity:0"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <filter id="softGlow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <radialGradient id="glowRed" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0"/>
+    </radialGradient>
+    <clipPath id="shieldClip">
+      <path d="M0,-62 L52,-42 L52,22 C52,54 26,74 0,84 C-26,74 -52,54 -52,22 L-52,-42 Z"/>
+    </clipPath>
   </defs>
 
   <!-- Background -->
-  <rect width="1200" height="320" fill="url(#bg)" rx="16"/>
+  <rect width="1200" height="340" fill="url(#bg)" rx="14"/>
 
-  <!-- Subtle grid pattern -->
-  <g opacity="0.04" stroke="#ffffff" stroke-width="0.5">
-    <line x1="0" y1="40" x2="1200" y2="40"/>
-    <line x1="0" y1="80" x2="1200" y2="80"/>
-    <line x1="0" y1="120" x2="1200" y2="120"/>
-    <line x1="0" y1="160" x2="1200" y2="160"/>
-    <line x1="0" y1="200" x2="1200" y2="200"/>
-    <line x1="0" y1="240" x2="1200" y2="240"/>
-    <line x1="0" y1="280" x2="1200" y2="280"/>
-    <line x1="80" y1="0" x2="80" y2="320"/>
-    <line x1="160" y1="0" x2="160" y2="320"/>
-    <line x1="240" y1="0" x2="240" y2="320"/>
-    <line x1="320" y1="0" x2="320" y2="320"/>
-    <line x1="400" y1="0" x2="400" y2="320"/>
-    <line x1="480" y1="0" x2="480" y2="320"/>
-    <line x1="560" y1="0" x2="560" y2="320"/>
-    <line x1="640" y1="0" x2="640" y2="320"/>
-    <line x1="720" y1="0" x2="720" y2="320"/>
-    <line x1="800" y1="0" x2="800" y2="320"/>
-    <line x1="880" y1="0" x2="880" y2="320"/>
-    <line x1="960" y1="0" x2="960" y2="320"/>
-    <line x1="1040" y1="0" x2="1040" y2="320"/>
-    <line x1="1120" y1="0" x2="1120" y2="320"/>
+  <!-- Subtle dot grid -->
+  <g fill="#ffffff" opacity="0.025">
+    <pattern id="dots" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1"/>
+    </pattern>
+    <rect width="1200" height="340" fill="url(#dots)"/>
   </g>
 
-  <!-- Decorative code lines (left side) -->
-  <g opacity="0.06" fill="#e74c3c" font-family="'Courier New',monospace" font-size="10">
-    <text x="20" y="30">if (input.contains("' OR 1=1")) { alert("SQLi"); }</text>
-    <text x="20" y="50">eval(request.getParameter("cmd"));</text>
-    <text x="20" y="70">pickle.loads(untrusted_data)</text>
-    <text x="20" y="90">child_process.exec(req.body.cmd)</text>
-    <text x="20" y="310">Runtime.getRuntime().exec(userInput);</text>
-    <text x="400" y="310">dangerouslySetInnerHTML={{__html: data}}</text>
-    <text x="800" y="30">subprocess.call(shell=True, cmd=input)</text>
-    <text x="800" y="50">new ObjectInputStream(socket.getInput())</text>
+  <!-- Faint code watermark -->
+  <g opacity="0.035" fill="#94a3b8" font-family="'JetBrains Mono','Fira Code','Courier New',monospace" font-size="9.5">
+    <text x="24" y="28">ObjectInputStream(socket.getInputStream())</text>
+    <text x="24" y="44">eval(request.getParameter("payload"))</text>
+    <text x="24" y="60">pickle.loads(untrusted_data)</text>
+    <text x="380" y="28">child_process.exec(req.body.cmd)</text>
+    <text x="380" y="44">dangerouslySetInnerHTML={{__html: input}}</text>
+    <text x="700" y="28">subprocess.call(shell=True, cmd=user_input)</text>
+    <text x="700" y="44">yaml.load(data, Loader=yaml.FullLoader)</text>
+    <text x="24" y="326">Runtime.getRuntime().exec(userInput)</text>
+    <text x="380" y="326">preg_replace("/e", $user_code, $subject)</text>
+    <text x="700" y="326">render_template_string(request.form["tpl"])</text>
+    <text x="980" y="28">_.merge({}, req.body)</text>
   </g>
 
-  <!-- Accent line top -->
-  <rect x="0" y="0" width="1200" height="3" fill="url(#accent)" rx="1"/>
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="1200" height="3.5" fill="url(#topBar)" rx="2"/>
 
-  <!-- Shield icon -->
-  <g transform="translate(80, 80)">
-    <!-- Shield outer -->
-    <path d="M0,-60 L50,-40 L50,20 C50,50 25,70 0,80 C-25,70 -50,50 -50,20 L-50,-40 Z"
-          fill="url(#shield)" filter="url(#softGlow)" opacity="0.9"/>
-    <!-- Shield inner -->
-    <path d="M0,-48 L40,-32 L40,16 C40,40 20,56 0,65 C-20,56 -40,40 -40,16 L-40,-32 Z"
-          fill="url(#shieldInner)"/>
-    <!-- Bug icon inside shield -->
-    <g transform="translate(0, 5)" fill="none" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round">
-      <!-- Bug body -->
-      <ellipse cx="0" cy="-8" rx="10" ry="7"/>
-      <ellipse cx="0" cy="10" rx="12" ry="12"/>
-      <!-- Bug head -->
-      <circle cx="0" cy="-20" r="6"/>
-      <!-- Antennae -->
-      <path d="M-4,-25 L-10,-35"/>
-      <path d="M4,-25 L10,-35"/>
-      <!-- Legs -->
-      <path d="M-12,2 L-22,-4"/>
-      <path d="M-12,10 L-24,10"/>
-      <path d="M-12,18 L-22,24"/>
-      <path d="M12,2 L22,-4"/>
-      <path d="M12,10 L24,10"/>
-      <path d="M12,18 L22,24"/>
+  <!-- Red glow behind shield -->
+  <ellipse cx="82" cy="148" rx="90" ry="90" fill="url(#glowRed)"/>
+
+  <!-- Shield + code-scan icon -->
+  <g transform="translate(82, 148)">
+    <!-- Shield shape -->
+    <path d="M0,-62 L52,-42 L52,22 C52,54 26,74 0,84 C-26,74 -52,54 -52,22 L-52,-42 Z"
+          fill="url(#iconGrad)" opacity="0.9"/>
+    <path d="M0,-50 L42,-34 L42,18 C42,44 21,60 0,68 C-21,60 -42,44 -42,18 L-42,-34 Z"
+          fill="#0a0a14"/>
+
+    <!-- Code brackets < / > inside shield -->
+    <g fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+      <!-- Left bracket < -->
+      <polyline points="-8,-18 -22,0 -8,18"/>
+      <!-- Right bracket > -->
+      <polyline points="8,-18 22,0 8,18"/>
+      <!-- Slash / -->
+      <line x1="6" y1="-20" x2="-6" y2="20" stroke-width="2.5" opacity="0.5"/>
     </g>
-    <!-- Crosshair / target over bug -->
-    <g stroke="#f39c12" stroke-width="1.5" opacity="0.6" fill="none">
-      <circle cx="0" cy="5" r="24"/>
-      <line x1="0" y1="-25" x2="0" y2="-15"/>
-      <line x1="0" y1="25" x2="0" y2="35"/>
-      <line x1="-25" y1="5" x2="-15" y2="5"/>
-      <line x1="15" y1="5" x2="25" y2="5"/>
+
+    <!-- Scanning line effect -->
+    <g clip-path="url(#shieldClip)">
+      <rect x="-52" y="-5" width="104" height="10" fill="url(#scanLine)" opacity="0.5"/>
+    </g>
+
+    <!-- Small lock icon at bottom of shield -->
+    <g transform="translate(0, 46)" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round" opacity="0.7">
+      <rect x="-7" y="0" width="14" height="10" rx="2"/>
+      <path d="M-4,0 L-4,-4 A4,4 0 0,1 4,-4 L4,0"/>
+      <circle cx="0" cy="5" r="1.5" fill="#f97316"/>
     </g>
   </g>
 
-  <!-- Title -->
-  <text x="160" y="105" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="42" font-weight="700" fill="#ffffff" letter-spacing="-0.5">
+  <!-- Title block -->
+  <text x="162" y="118" font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="44" font-weight="800" fill="#f8fafc" letter-spacing="-1">
     Static Application
   </text>
-  <text x="160" y="155" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="42" font-weight="700" fill="#ffffff" letter-spacing="-0.5">
+  <text x="162" y="170" font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="44" font-weight="800" fill="#f8fafc" letter-spacing="-1">
     Security Testing
   </text>
 
-  <!-- Subtitle -->
-  <text x="160" y="190" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#8892a4" letter-spacing="0.5">
-    Source Code Vulnerability Detection &amp; SaaS Security Posture Management
+  <!-- Tagline -->
+  <text x="164" y="202" font-family="'Inter','Segoe UI',sans-serif" font-size="15" fill="#64748b" letter-spacing="0.3">
+    Source code vulnerability detection &amp; SaaS security posture management
   </text>
 
-  <!-- Language badges -->
-  <g transform="translate(160, 215)">
+  <!-- Language pill row -->
+  <g transform="translate(164, 222)">
     <!-- Java -->
-    <rect x="0" y="0" width="56" height="26" rx="6" fill="#e74c3c" opacity="0.15"/>
-    <rect x="0" y="0" width="56" height="26" rx="6" fill="none" stroke="#e74c3c" stroke-width="1" opacity="0.4"/>
-    <text x="28" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#e74c3c" text-anchor="middle">Java</text>
+    <rect x="0" y="0" width="52" height="24" rx="12" fill="#ef4444" opacity="0.12"/>
+    <rect x="0" y="0" width="52" height="24" rx="12" fill="none" stroke="#ef4444" stroke-width="0.8" opacity="0.35"/>
+    <text x="26" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="10.5" font-weight="600" fill="#ef4444" text-anchor="middle">Java</text>
 
     <!-- PHP -->
-    <rect x="66" y="0" width="50" height="26" rx="6" fill="#8b5cf6" opacity="0.15"/>
-    <rect x="66" y="0" width="50" height="26" rx="6" fill="none" stroke="#8b5cf6" stroke-width="1" opacity="0.4"/>
-    <text x="91" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#8b5cf6" text-anchor="middle">PHP</text>
+    <rect x="60" y="0" width="46" height="24" rx="12" fill="#a855f7" opacity="0.12"/>
+    <rect x="60" y="0" width="46" height="24" rx="12" fill="none" stroke="#a855f7" stroke-width="0.8" opacity="0.35"/>
+    <text x="83" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="10.5" font-weight="600" fill="#a855f7" text-anchor="middle">PHP</text>
 
     <!-- Python -->
-    <rect x="126" y="0" width="64" height="26" rx="6" fill="#3b82f6" opacity="0.15"/>
-    <rect x="126" y="0" width="64" height="26" rx="6" fill="none" stroke="#3b82f6" stroke-width="1" opacity="0.4"/>
-    <text x="158" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#3b82f6" text-anchor="middle">Python</text>
+    <rect x="114" y="0" width="60" height="24" rx="12" fill="#3b82f6" opacity="0.12"/>
+    <rect x="114" y="0" width="60" height="24" rx="12" fill="none" stroke="#3b82f6" stroke-width="0.8" opacity="0.35"/>
+    <text x="144" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="10.5" font-weight="600" fill="#3b82f6" text-anchor="middle">Python</text>
 
-    <!-- JS/TS -->
-    <rect x="200" y="0" width="56" height="26" rx="6" fill="#f59e0b" opacity="0.15"/>
-    <rect x="200" y="0" width="56" height="26" rx="6" fill="none" stroke="#f59e0b" stroke-width="1" opacity="0.4"/>
-    <text x="228" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#f59e0b" text-anchor="middle">JS/TS</text>
+    <!-- JS / TS -->
+    <rect x="182" y="0" width="52" height="24" rx="12" fill="#eab308" opacity="0.12"/>
+    <rect x="182" y="0" width="52" height="24" rx="12" fill="none" stroke="#eab308" stroke-width="0.8" opacity="0.35"/>
+    <text x="208" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="10.5" font-weight="600" fill="#eab308" text-anchor="middle">JS/TS</text>
 
-    <!-- AI/LLM -->
-    <rect x="266" y="0" width="64" height="26" rx="6" fill="#2ecc71" opacity="0.15"/>
-    <rect x="266" y="0" width="64" height="26" rx="6" fill="none" stroke="#2ecc71" stroke-width="1" opacity="0.4"/>
-    <text x="298" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#2ecc71" text-anchor="middle">AI/LLM</text>
+    <!-- AI / LLM -->
+    <rect x="242" y="0" width="62" height="24" rx="12" fill="#22c55e" opacity="0.12"/>
+    <rect x="242" y="0" width="62" height="24" rx="12" fill="none" stroke="#22c55e" stroke-width="0.8" opacity="0.35"/>
+    <text x="273" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="10.5" font-weight="600" fill="#22c55e" text-anchor="middle">AI/LLM</text>
 
     <!-- M365 -->
-    <rect x="340" y="0" width="56" height="26" rx="6" fill="#0ea5e9" opacity="0.15"/>
-    <rect x="340" y="0" width="56" height="26" rx="6" fill="none" stroke="#0ea5e9" stroke-width="1" opacity="0.4"/>
-    <text x="368" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#0ea5e9" text-anchor="middle">M365</text>
-
-    <!-- ServiceNow -->
-    <rect x="406" y="0" width="90" height="26" rx="6" fill="#64748b" opacity="0.15"/>
-    <rect x="406" y="0" width="90" height="26" rx="6" fill="none" stroke="#64748b" stroke-width="1" opacity="0.4"/>
-    <text x="451" y="17" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">ServiceNow</text>
+    <rect x="312" y="0" width="52" height="24" rx="12" fill="#0ea5e9" opacity="0.12"/>
+    <rect x="312" y="0" width="52" height="24" rx="12" fill="none" stroke="#0ea5e9" stroke-width="0.8" opacity="0.35"/>
+    <text x="338" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="10.5" font-weight="600" fill="#0ea5e9" text-anchor="middle">M365</text>
   </g>
 
-  <!-- Stats cards (right side) -->
-  <g transform="translate(780, 70)">
-    <!-- Card 1: Scanners -->
-    <rect x="0" y="0" width="115" height="72" rx="10" fill="#ffffff" opacity="0.04"/>
-    <rect x="0" y="0" width="115" height="72" rx="10" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.08"/>
-    <text x="57" y="38" font-family="'Segoe UI',sans-serif" font-size="28" font-weight="700" fill="#e74c3c" text-anchor="middle">7</text>
-    <text x="57" y="58" font-family="'Segoe UI',sans-serif" font-size="10" fill="#8892a4" text-anchor="middle" text-transform="uppercase" letter-spacing="1">SCANNERS</text>
+  <!-- Right panel: stats -->
+  <g transform="translate(770, 78)">
+    <!-- Scanners card -->
+    <rect x="0" y="0" width="125" height="76" rx="10" fill="#1e293b" opacity="0.5"/>
+    <rect x="0" y="0" width="125" height="76" rx="10" fill="none" stroke="#334155" stroke-width="0.7"/>
+    <text x="62" y="36" font-family="'Inter','Segoe UI',sans-serif" font-size="30" font-weight="800" fill="#ef4444" text-anchor="middle">6</text>
+    <text x="62" y="56" font-family="'Inter','Segoe UI',sans-serif" font-size="9.5" fill="#64748b" text-anchor="middle" letter-spacing="1.2">SCANNERS</text>
 
-    <!-- Card 2: Rules -->
-    <rect x="125" y="0" width="115" height="72" rx="10" fill="#ffffff" opacity="0.04"/>
-    <rect x="125" y="0" width="115" height="72" rx="10" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.08"/>
-    <text x="182" y="38" font-family="'Segoe UI',sans-serif" font-size="28" font-weight="700" fill="#f39c12" text-anchor="middle">200+</text>
-    <text x="182" y="58" font-family="'Segoe UI',sans-serif" font-size="10" fill="#8892a4" text-anchor="middle" text-transform="uppercase" letter-spacing="1">SAST RULES</text>
+    <!-- Rules card -->
+    <rect x="135" y="0" width="125" height="76" rx="10" fill="#1e293b" opacity="0.5"/>
+    <rect x="135" y="0" width="125" height="76" rx="10" fill="none" stroke="#334155" stroke-width="0.7"/>
+    <text x="197" y="36" font-family="'Inter','Segoe UI',sans-serif" font-size="30" font-weight="800" fill="#f97316" text-anchor="middle">200+</text>
+    <text x="197" y="56" font-family="'Inter','Segoe UI',sans-serif" font-size="9.5" fill="#64748b" text-anchor="middle" letter-spacing="1.2">SAST RULES</text>
 
-    <!-- Card 3: CVEs -->
-    <rect x="250" y="0" width="115" height="72" rx="10" fill="#ffffff" opacity="0.04"/>
-    <rect x="250" y="0" width="115" height="72" rx="10" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.08"/>
-    <text x="307" y="38" font-family="'Segoe UI',sans-serif" font-size="28" font-weight="700" fill="#2ecc71" text-anchor="middle">80+</text>
-    <text x="307" y="58" font-family="'Segoe UI',sans-serif" font-size="10" fill="#8892a4" text-anchor="middle" text-transform="uppercase" letter-spacing="1">CVEs</text>
+    <!-- CVEs card -->
+    <rect x="270" y="0" width="125" height="76" rx="10" fill="#1e293b" opacity="0.5"/>
+    <rect x="270" y="0" width="125" height="76" rx="10" fill="none" stroke="#334155" stroke-width="0.7"/>
+    <text x="332" y="36" font-family="'Inter','Segoe UI',sans-serif" font-size="30" font-weight="800" fill="#22c55e" text-anchor="middle">80+</text>
+    <text x="332" y="56" font-family="'Inter','Segoe UI',sans-serif" font-size="9.5" fill="#64748b" text-anchor="middle" letter-spacing="1.2">DEP CVEs</text>
   </g>
 
-  <!-- OWASP / categories row (right side) -->
-  <g transform="translate(780, 160)">
-    <rect x="0" y="0" width="365" height="44" rx="8" fill="#ffffff" opacity="0.03"/>
-    <rect x="0" y="0" width="365" height="44" rx="8" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.06"/>
-    <text x="16" y="17" font-family="'Segoe UI',sans-serif" font-size="9" fill="#64748b" letter-spacing="1.5" text-transform="uppercase">COVERAGE</text>
-    <text x="16" y="35" font-family="'Segoe UI',sans-serif" font-size="11" fill="#94a3b8">
-      OWASP Top 10 &middot; LLM Top 10 &middot; CWE Top 25 &middot; 50+ CVE Families
+  <!-- Right panel: coverage bar -->
+  <g transform="translate(770, 172)">
+    <rect x="0" y="0" width="395" height="42" rx="8" fill="#1e293b" opacity="0.4"/>
+    <rect x="0" y="0" width="395" height="42" rx="8" fill="none" stroke="#334155" stroke-width="0.5"/>
+    <text x="14" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="8.5" fill="#475569" letter-spacing="1.8">FRAMEWORKS</text>
+    <g transform="translate(14, 26)">
+      <rect x="0" y="0" width="72" height="10" rx="5" fill="#ef4444" opacity="0.12"/>
+      <text x="36" y="8" font-family="'Inter',sans-serif" font-size="7.5" font-weight="600" fill="#ef4444" text-anchor="middle">OWASP Top 10</text>
+      <rect x="78" y="0" width="68" height="10" rx="5" fill="#22c55e" opacity="0.12"/>
+      <text x="112" y="8" font-family="'Inter',sans-serif" font-size="7.5" font-weight="600" fill="#22c55e" text-anchor="middle">LLM Top 10</text>
+      <rect x="152" y="0" width="60" height="10" rx="5" fill="#3b82f6" opacity="0.12"/>
+      <text x="182" y="8" font-family="'Inter',sans-serif" font-size="7.5" font-weight="600" fill="#3b82f6" text-anchor="middle">CWE Top 25</text>
+      <rect x="218" y="0" width="48" height="10" rx="5" fill="#f97316" opacity="0.12"/>
+      <text x="242" y="8" font-family="'Inter',sans-serif" font-size="7.5" font-weight="600" fill="#f97316" text-anchor="middle">SSPM</text>
+    </g>
+  </g>
+
+  <!-- Right panel: output bar -->
+  <g transform="translate(770, 226)">
+    <rect x="0" y="0" width="395" height="42" rx="8" fill="#1e293b" opacity="0.4"/>
+    <rect x="0" y="0" width="395" height="42" rx="8" fill="none" stroke="#334155" stroke-width="0.5"/>
+    <text x="14" y="16" font-family="'Inter','Segoe UI',sans-serif" font-size="8.5" fill="#475569" letter-spacing="1.8">OUTPUT</text>
+    <text x="14" y="33" font-family="'Inter','Segoe UI',sans-serif" font-size="11" fill="#94a3b8">
+      Console  ·  JSON  ·  HTML  ·  CI/CD Gate (exit 1 on CRIT/HIGH)
     </text>
   </g>
 
-  <!-- Bottom info bar -->
-  <g transform="translate(780, 220)">
-    <rect x="0" y="0" width="365" height="44" rx="8" fill="#ffffff" opacity="0.03"/>
-    <rect x="0" y="0" width="365" height="44" rx="8" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.06"/>
-    <text x="16" y="17" font-family="'Segoe UI',sans-serif" font-size="9" fill="#64748b" letter-spacing="1.5" text-transform="uppercase">OUTPUTS</text>
-    <text x="16" y="35" font-family="'Segoe UI',sans-serif" font-size="11" fill="#94a3b8">
-      Console &middot; JSON &middot; HTML &middot; CI/CD (exit code 1 on CRIT/HIGH)
-    </text>
-  </g>
+  <!-- Footer line -->
+  <line x1="40" y1="290" x2="1160" y2="290" stroke="#1e293b" stroke-width="0.7"/>
 
-  <!-- Bottom accent line -->
-  <rect x="0" y="317" width="1200" height="3" fill="url(#accent)" rx="1"/>
-
-  <!-- Watermark -->
-  <text x="160" y="290" font-family="'Segoe UI',sans-serif" font-size="11" fill="#4a5568" letter-spacing="0.3">
-    Zero-dependency Python SAST &middot; Single-file scanners &middot; github.com/Krishcalin/Static-Application-Security-Testing
+  <!-- Footer text -->
+  <text x="164" y="312" font-family="'Inter','Segoe UI',sans-serif" font-size="11" fill="#475569" letter-spacing="0.2">
+    Zero-dependency Python SAST  ·  Single-file scanners  ·  github.com/Krishcalin/Static-Application-Security-Testing
   </text>
+
+  <!-- Bottom accent bar -->
+  <rect x="0" y="336.5" width="1200" height="3.5" fill="url(#topBar)" rx="2"/>
 </svg>

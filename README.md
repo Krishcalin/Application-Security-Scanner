@@ -1,4 +1,4 @@
-# Security Audit Scanner (SAS)
+# Static Application Security Testing (SAST)
 
 A collection of self-contained security scanners covering **Static Application Security Testing (SAST)**
 for source code, **Infrastructure-as-Code (IaC) security analysis**, **Network Device Security**

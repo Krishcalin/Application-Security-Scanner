@@ -13,7 +13,7 @@ and more.
   <img src="https://img.shields.io/badge/python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white"/>
   <img src="https://img.shields.io/badge/license-MIT-orange?style=flat-square"/>
   <img src="https://img.shields.io/badge/SAST_scanners-5-ef4444?style=flat-square"/>
-  <img src="https://img.shields.io/badge/SSPM_scanners-2-f59e0b?style=flat-square"/>
+  <img src="https://img.shields.io/badge/SSPM_scanners-1-f59e0b?style=flat-square"/>
   <img src="https://img.shields.io/badge/languages-Java%20%7C%20PHP%20%7C%20Python%20%7C%20JS%2FTS%20%7C%20AI%2FLLM-22c55e?style=flat-square"/>
 </p>
 
@@ -29,7 +29,6 @@ and more.
 | `mern_scanner.py` | SAST | JS/TS source, package.json, `.env` | 4.0.0 | 1,181 |
 | `owasp_llm_scanner.py` | SAST | Python/JS AI & LLM applications (OWASP LLM Top 10) | 1.0.0 | 1,998 |
 | `m365_scanner.py` | SSPM | Microsoft 365 + Entra ID (Microsoft Graph API) | 1.0.0 | 2,258 |
-| `servicenow_scanner.py` | SSPM | ServiceNow live instance (REST Table API) | 1.0.0 | 1,696 |
 
 > **Other scanners** (AWS IaC, Cisco, Palo Alto, SAP SuccessFactors, Fortinet, Kubernetes, etc.)
 > have been moved to their own dedicated repositories. See [Related Projects](#related-projects).
@@ -268,21 +267,6 @@ python3 m365_scanner.py \
 
 ---
 
-### ServiceNow SSPM Scanner (`servicenow_scanner.py`)
-
-Makes live REST Table API calls to a ServiceNow instance and audits security configuration
-across **40+ checks**.
-
-**Check categories**: XSS Prevention, CSRF Protection, Session Management, Authentication, Password Policy, File Attachments, Transport Security, Script Security, Audit & Logging, Users, OAuth Applications, Access Control Lists, Email Security.
-
-```bash
-python3 servicenow_scanner.py \
-  --instance <instance-name-or-url> \
-  --username <user> \
-  --password <pass> \
-  [--severity HIGH] [--json report.json] [--html report.html] [-v]
-```
-
 ---
 
 ## Common Options
@@ -313,7 +297,7 @@ All scanners share these CLI options:
 - Python 3.8+
 - No third-party dependencies (standard library only)
 
-### SSPM scanners (`m365_scanner.py`, `servicenow_scanner.py`)
+### SSPM scanner (`m365_scanner.py`)
 
 - Python 3.8+
 - `pip install requests`
@@ -371,6 +355,7 @@ Scanners that were previously in this repository have been moved to dedicated re
 | Cisco IOS/IOS-XE Network Security | [Cisco-Network-Security](https://github.com/Krishcalin/Cisco-Network-Security) |
 | Palo Alto PAN-OS Firewall Security | [PaloAlto-Network-Security](https://github.com/Krishcalin/PaloAlto-Network-Security) |
 | Fortinet FortiGate Firewall Security | [Fortinet-Network-Security](https://github.com/Krishcalin/Fortinet-Network-Security) |
+| ServiceNow SSPM | [SSPM-ServiceNow](https://github.com/Krishcalin/SSPM-ServiceNow) |
 | SAP SuccessFactors SSPM | [SAP-SuccessFactors](https://github.com/Krishcalin/SAP-SuccessFactors) |
 | Kubernetes KSPM | [Kubernetes-KSPM](https://github.com/Krishcalin/Kubernetes-Security-Posture-Management) |
 | AI Security Posture Management | [AI-Secure-Posture-Management](https://github.com/Krishcalin/AI-Secure-Posture-Management) |
